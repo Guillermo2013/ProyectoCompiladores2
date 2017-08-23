@@ -3,7 +3,8 @@
 #include <list>
 #include <map>
 #include <iostream>
-#include <stdio.h>	
+#include <stdio.h>
+	
 using namespace std;
 
 
@@ -23,6 +24,17 @@ class BinaryExpr:public Expr{
 	Expr *expr1,*expr2;
  	
 };
+
+class UnaryExpr:public Expr{
+ protected:
+	UnaryExpr(Expr *expr1){
+		this->expr1 = expr1;
+	}
+ public:
+	Expr *expr1;
+ 	
+};
+
 #define DEFINE_BINARY_EXPR(name) \
 	class name##Expr : public BinaryExpr { \
 	public : \
@@ -40,6 +52,42 @@ DEFINE_BINARY_EXPR(Mayor);
 DEFINE_BINARY_EXPR(Menor);
 DEFINE_BINARY_EXPR(MayorIgual);
 DEFINE_BINARY_EXPR(MenorIgual);
+DEFINE_BINARY_EXPR(Or);
+DEFINE_BINARY_EXPR(And);
+DEFINE_BINARY_EXPR(Mod);
+DEFINE_BINARY_EXPR(CorrimientoIzq);
+DEFINE_BINARY_EXPR(CorrimientoDer);
+DEFINE_BINARY_EXPR(OPorBit);
+DEFINE_BINARY_EXPR(ExclPorBit);
+DEFINE_BINARY_EXPR(YPorBit);
+
+#define DEFINE_UNARY_EXPR(name) \
+	class name##Expr : public UnaryExpr { \
+	public : \
+		name##Expr(Expr *expr1):UnaryExpr(expr1){} \
+		int eval(){return 0;} \
+}
+DEFINE_UNARY_EXPR(Desferencia);
+DEFINE_UNARY_EXPR(PreIncremento);
+DEFINE_UNARY_EXPR(PreDecremento);
+DEFINE_UNARY_EXPR(PosIncremento);
+DEFINE_UNARY_EXPR(PosDecremento);
+DEFINE_UNARY_EXPR(Referencia);
+DEFINE_UNARY_EXPR(Negacion);
+DEFINE_UNARY_EXPR(Complemento);
+
+class TernarioExpr:public Expr{
+ public:
+	TernarioExpr(Expr* condicion,Expr *expr1,Expr *expr2){
+		this->condicion = condicion;
+		this->expr1 = expr1;
+		this->expr2 = expr2;	
+	}	
+	Expr* condicion;
+	Expr *expr1;	
+	Expr *expr2;
+	int eval(){ return 0;}
+};
 
 class NumberExpr:public Expr{
  public:
@@ -48,6 +96,22 @@ class NumberExpr:public Expr{
 	}	
 	int value;
 	int eval(){ return value;}
+};
+class StringExpr:public Expr{
+ public:
+	StringExpr(char* value){
+		this->value = value;	
+	}	
+	char* value;
+	int eval(){ cout<<" "<< value <<endl; return 0;}
+};
+class CharExpr:public Expr{
+ public:
+	CharExpr(char value){
+		this->value = value;	
+	}	
+	char value;
+	int eval(){ cout<<" "<< value <<endl; return value;}
 };
 class VarExpr:public Expr{
  public:
@@ -76,13 +140,10 @@ class Statement{
 
 class AssignStatement : public Statement{
 	public:
-		int index = -1;
+	
                 char * nombre;
 		Expr *expr;
-		AssignStatement(int index, Expr * expr){
-			this->index = index;
-			this->expr = expr;
-		}
+	
 		AssignStatement(char * nombre, Expr * expr){
 			this->nombre = nombre;
 			this->expr = expr;
@@ -135,5 +196,40 @@ class BlockStatement : public Statement
 	}
 	list<Statement*> listStatement;
 	void exec();
+};
+
+
+class Producer_Statement: public Statement 
+{
+ public: 
+		char* nombre;
+		Statement *producerStatement;
+		map< char *, void* > parametros;
+		Producer_Statement(char* nombre,Statement *producerStatement){
+			this->nombre = nombre;
+			this->producerStatement = producerStatement;
+			
+		}
+
+		void exec();
+};
+
+class For_Statement: public Statement 
+{
+ public: 
+		
+		Statement *inicializacion;
+		Expr * condicional;
+		Expr * incremento;
+		Statement *ForStatement;
+		For_Statement(Statement *inicializacion,Expr * condicional,Expr * incremento,Statement *ForStatement){
+			this->inicializacion = inicializacion;
+			this->condicional = condicional;
+			this->incremento = incremento;
+			this->ForStatement = ForStatement;
+			
+		}
+
+		void exec();
 };
 #endif 

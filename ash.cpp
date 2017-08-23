@@ -28,7 +28,14 @@ IMPLEMENT_BINARY_EXPR_EVAL(Mayor,>);
 IMPLEMENT_BINARY_EXPR_EVAL(Menor,<);
 IMPLEMENT_BINARY_EXPR_EVAL(MayorIgual,>=);
 IMPLEMENT_BINARY_EXPR_EVAL(MenorIgual,<=);
-
+IMPLEMENT_BINARY_EXPR_EVAL(Or,||);
+IMPLEMENT_BINARY_EXPR_EVAL(And,&&);
+IMPLEMENT_BINARY_EXPR_EVAL(Mod,%);
+IMPLEMENT_BINARY_EXPR_EVAL(CorrimientoIzq,<<);
+IMPLEMENT_BINARY_EXPR_EVAL(CorrimientoDer,>>);
+IMPLEMENT_BINARY_EXPR_EVAL(OPorBit,|);
+IMPLEMENT_BINARY_EXPR_EVAL(ExclPorBit,^);
+IMPLEMENT_BINARY_EXPR_EVAL(YPorBit,&);
 
 
 
@@ -51,9 +58,6 @@ int VarExpr::eval(){
 }
 void AssignStatement:: exec(){
   int v1 = expr->eval();
-  if(index != -1)
-   vars[index] = v1;
-   else if(index == -1){
 	int existe = 0;
       map<char *, int>::iterator p = variablesNombres.begin();
 	  while (p != variablesNombres.end() )
@@ -70,7 +74,7 @@ void AssignStatement:: exec(){
    
 	
        
- }
+ 
   
 }
 
@@ -101,8 +105,15 @@ void BlockStatement::exec(){
     pos = listStatement.begin();
     while(pos != listStatement.end())
     {
+      if(*pos != NULL)
       (*pos)->exec();
       pos++;
     }
   }	
+}
+void Producer_Statement::exec(){
+  	
+}
+void For_Statement::exec(){
+  	
 }
