@@ -1,3 +1,26 @@
 a =  0x22a;
 a = a == 2 ? 3 : 4;
 a = a == ++a;
+a = a==a?1:2;
+a = &a <<= a;
+
+printf("hola",m);
+scanf("goal");
+
+do 
+printf("hol",m);
+while (0);
+
+int *hola= {2,2,3,4,1,2};
+int hola[10]= {2,2,3,4,1,2};
+int *a = 2;
+int a;
+int a();
+a(1,2);
+int a (){
+
+do 
+printf("hol",m);
+while (0);
+}
+printf("TERMINO",m);

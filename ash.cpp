@@ -53,34 +53,10 @@ map<char *, int>::iterator p = variablesNombres.begin();
  exit (1);
   
 }
-int VarExpr::eval(){
-  return vars[index];	
-}
-void AssignStatement:: exec(){
-  int v1 = expr->eval();
-	int existe = 0;
-      map<char *, int>::iterator p = variablesNombres.begin();
-	  while (p != variablesNombres.end() )
-	  {
-	    if(strcmp(p->first,nombre) == 0){
-	       p->second = v1;
-	  	existe = 1;  
-	   }
-	    p ++;
-	    
-	  }
-	if(existe == 0) 
-    variablesNombres.insert(elemento(nombre,v1));
-   
-	
-       
- 
-  
-}
+
 
 void PrintStatement:: exec(){
-  int v1 = expr->eval();
-  cout << v1 << "\n";
+  cout <<string << "\n";
 }
 void If_Statement::exec(){
  int v1 = expr->eval();
@@ -90,11 +66,20 @@ void If_Statement::exec(){
  else
    elseStatement->exec();
 }
-	void While_Statement::exec(){
+void While_Statement::exec(){
 
 
  while( expr->eval()  == 1)
    whileStatement->exec();
+ 
+}
+
+void DoWhile_Statement::exec(){
+
+ do
+  DowhileStatement->exec();
+ while( expr->eval()  == 1);
+   
  
 }
 
@@ -116,4 +101,8 @@ void Producer_Statement::exec(){
 }
 void For_Statement::exec(){
   	
+}
+
+void ScanfStatement::exec(){
+  cout <<string << "\n";	
 }

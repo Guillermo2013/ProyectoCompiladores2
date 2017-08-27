@@ -14,6 +14,8 @@ public:
  virtual int eval() = 0;
 };
 
+typedef list<Expr*> ExprList;
+
 class BinaryExpr:public Expr{
  protected:
 	BinaryExpr(Expr *expr1,Expr *expr2){
@@ -31,6 +33,17 @@ class UnaryExpr:public Expr{
 		this->expr1 = expr1;
 	}
  public:
+	Expr *expr1;
+ 	
+};
+class AssignExpr:public Expr{
+ protected:
+	AssignExpr(Expr *nombre,Expr *expr1){
+		this->expr1 = expr1;
+		this->nombre = nombre;	
+	}
+ public:
+	Expr *nombre;
 	Expr *expr1;
  	
 };
@@ -76,6 +89,25 @@ DEFINE_UNARY_EXPR(Referencia);
 DEFINE_UNARY_EXPR(Negacion);
 DEFINE_UNARY_EXPR(Complemento);
 
+#define DEFINE_ASSIGN_EXPR(name) \
+	class name##Expr : public AssignExpr { \
+	public : \
+		name##Expr(Expr *nombre,Expr *expr1):AssignExpr(nombre,expr1){} \
+		int eval(){return 0;} \
+}
+
+DEFINE_ASSIGN_EXPR(Asignar);
+DEFINE_ASSIGN_EXPR(MasIgual);
+DEFINE_ASSIGN_EXPR(MenosIgual);
+DEFINE_ASSIGN_EXPR(MultIgual);
+DEFINE_ASSIGN_EXPR(DivIgual);
+DEFINE_ASSIGN_EXPR(ModIgual);
+DEFINE_ASSIGN_EXPR(OrBitIgual);
+DEFINE_ASSIGN_EXPR(AndBitIgual);
+DEFINE_ASSIGN_EXPR(XorBitIgual);
+DEFINE_ASSIGN_EXPR(AsigCorIzqIgual);
+DEFINE_ASSIGN_EXPR(AsigCorDerIgual);
+
 class TernarioExpr:public Expr{
  public:
 	TernarioExpr(Expr* condicion,Expr *expr1,Expr *expr2){
@@ -113,20 +145,53 @@ class CharExpr:public Expr{
 	char value;
 	int eval(){ cout<<" "<< value <<endl; return value;}
 };
-class VarExpr:public Expr{
+
+class ArrayExpr:public Expr{
  public:
-	int index;
-	int eval();
-	VarExpr(int index){
-		this->index = index;	
+	ArrayExpr(ExprList *value){
+		this->value = value;	
 	}	
-	
+	ExprList *value;
+	int eval(){  return 0;}
 };
+
+
+
+
 class VarNombreExpr:public Expr{
  public:
 	char *index;
 	int eval();
 	VarNombreExpr(char * index){
+		this->index = index;	
+	}	
+	
+};
+class VarNombreArrayExpr:public Expr{
+ public:
+	char *index;
+	Expr*expr1;
+	int eval(){return 0;};
+	VarNombreArrayExpr(char * index,Expr*expr1){
+		this->index = index;
+		this->expr1 = expr1;	
+	}	
+	
+};
+class DesreferenciaExpr:public Expr{
+ public:
+	char *index;
+	int eval(){return 0;};
+	DesreferenciaExpr(char * index){
+		this->index = index;	
+	}	
+	
+};
+class ReferenciaVarExpr:public Expr{
+ public:
+	char *index;
+	int eval(){return 0;};
+	ReferenciaVarExpr(char * index){
 		this->index = index;	
 	}	
 	
@@ -139,27 +204,62 @@ class Statement{
 };
 
 class AssignStatement : public Statement{
-	public:
+	protected:
 	
-                char * nombre;
-		Expr *expr;
-	
-		AssignStatement(char * nombre, Expr * expr){
+		AssignStatement(Expr * nombre, Expr * expr1){
 			this->nombre = nombre;
-			this->expr = expr;
+			this->expr1 = expr1;
                       
 		}
-		void exec();
+	public:	
+	Expr * nombre;
+		Expr *expr1;
 		
 };
-class PrintStatement : public Statement{
-	public: 
-		Expr *expr;
-		PrintStatement(Expr *expr){
-			this->expr = expr;
-		}
 
-		void exec();
+#define DEFINE_ASSIGN_Statement(name) \
+	class name##Statement : public AssignStatement { \
+	public : \
+		name##Statement(Expr *nombre,Expr *expr1):AssignStatement(nombre,expr1){} \
+		void exec(){} \
+}
+
+DEFINE_ASSIGN_Statement(Asignar);
+DEFINE_ASSIGN_Statement(MasIgual);
+DEFINE_ASSIGN_Statement(MenosIgual);
+DEFINE_ASSIGN_Statement(MultIgual);
+DEFINE_ASSIGN_Statement(DivIgual);
+DEFINE_ASSIGN_Statement(ModIgual);
+DEFINE_ASSIGN_Statement(OrBitIgual);
+DEFINE_ASSIGN_Statement(AndBitIgual);
+DEFINE_ASSIGN_Statement(XorBitIgual);
+DEFINE_ASSIGN_Statement(AsigCorIzqIgual);
+DEFINE_ASSIGN_Statement(AsigCorDerIgual);
+
+
+
+class PrintStatement : public Statement{
+public:
+	ExprList  *lista;
+        char * string;
+	PrintStatement(char * string,ExprList  *lista) {
+      	 	this->lista = lista; 
+		this->string = string; 
+    	}
+    void exec();
+    
+};
+
+class ScanfStatement : public Statement{
+public:
+	ExprList  *lista;
+        char * string;
+	ScanfStatement(char * string,ExprList  *lista) {
+      	 	this->lista = lista; 
+		this->string = string; 
+    	}
+    void exec();
+    
 };
 class If_Statement : public Statement{
 	public: 
@@ -187,6 +287,21 @@ class While_Statement : public Statement{
 
 		void exec();
 };
+
+class DoWhile_Statement : public Statement{
+	public: 
+		Expr *expr;
+		Statement *DowhileStatement;
+		
+		DoWhile_Statement(Expr *expr,Statement *DowhileStatement){
+			this->expr = expr;
+			this->DowhileStatement = DowhileStatement;
+			
+		}
+
+		void exec();
+};
+
 class BlockStatement : public Statement
 {
  public :
@@ -204,7 +319,6 @@ class Producer_Statement: public Statement
  public: 
 		char* nombre;
 		Statement *producerStatement;
-		map< char *, void* > parametros;
 		Producer_Statement(char* nombre,Statement *producerStatement){
 			this->nombre = nombre;
 			this->producerStatement = producerStatement;
@@ -232,4 +346,90 @@ class For_Statement: public Statement
 
 		void exec();
 };
+
+class DecArrayStatement: public Statement 
+{
+ public: 
+		
+		char  * type;
+		char  * nombre;
+		Expr * tam;		
+		Expr * inicializar;
+		DecArrayStatement(char  * type,char  * nombre,Expr * tam,Expr *inicializar){
+			this->type = type;
+			this->nombre = nombre;
+			this->tam = tam;
+			this->inicializar = inicializar;
+			
+		}
+
+		void exec(){};
+};
+
+class DecApuntadorStatement: public Statement 
+{
+ public: 
+		char  * type;
+		char  * nombre;		
+		Expr * inicializar;
+		DecApuntadorStatement(char  *type,char  *nombre,Expr *inicializar){
+			this->type = type;
+			this->nombre = nombre;
+			this->inicializar = inicializar;
+			
+		}
+
+		void exec(){};
+};
+class DecVariableStatement: public Statement 
+{
+ public: 
+		
+		char  * type;
+		char  * nombre;		
+		Expr * inicializar;
+		
+		DecVariableStatement(char  * type,char  * nombre,Expr *inicializar){
+			this->type = type;
+			this->nombre = nombre;
+			this->inicializar = inicializar;
+			
+		}
+
+		void exec(){};
+};
+class Funcion_Statement: public Statement 
+{
+ public: 
+		
+		char  * type;
+		char* nombre;
+		Statement *funcionStatement;
+		Funcion_Statement(char  * type,char  * nombre,Statement *funcionStatement){
+			this->type = type;
+			this->nombre = nombre;
+			this->funcionStatement = funcionStatement;
+			
+		}
+
+		void exec(){};
+};
+
+class CallFuncionStatement: public Statement 
+{
+ public: 
+		
+		
+		char* nombre;
+		ExprList *parametros;
+		CallFuncionStatement(char  * nombre,ExprList *parametros){
+			
+			this->nombre = nombre;
+			this->parametros = parametros;
+			
+		}
+
+		void exec(){};
+};
+
 #endif 

@@ -109,7 +109,11 @@ extern int yydebug;
     TK_Interogaccion = 313,
     TK_Negarcion = 314,
     TK_Complemento = 315,
-    TK_DosPuntos = 316
+    TK_DosPuntos = 316,
+    TK_AsigAndBit = 317,
+    TK_AsigXorBit = 318,
+    TK_AutoMod = 319,
+    TK_Do = 320
   };
 #endif
 
@@ -125,8 +129,9 @@ union YYSTYPE
   int int_t;
   char *string_t;
   char char_t;
+  ExprList *exprlist_t;
 
-#line 130 "tokens.h" /* glr.c:197  */
+#line 135 "tokens.h" /* glr.c:197  */
 };
 
 typedef union YYSTYPE YYSTYPE;

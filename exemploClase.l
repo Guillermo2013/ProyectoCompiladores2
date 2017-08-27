@@ -1,33 +1,17 @@
 %option noyywrap
 %option yylineno
 %x commentMultLine
-%x include
-%x includeM
 %x stringState
 %x charState
 %{
 #include <stdio.h>
 #include "tokens.h" 
 #include "ash.h"
-typedef struct include_stack{
- struct include_stack *prev;
- FILE *f;
- int lineno;
- char *filename;
- YY_BUFFER_STATE bs;
-} include_stack_t;
-
-include_stack_t *inc_stack = NULL;
-char *yyfilename;
-int pop_file();
-int push_file(char *filename);
 int  validateChar();
 %}
 %%
 [ \t]   { /*nada */} 
 "//".*\n {return TK_EOL;}
-"#"[ \t]*"include"[ \t]*\" { BEGIN(include);} 
-"#"[ \t]*"include"[ \t]*< { BEGIN(includeM);} 
 "/*" 	{ BEGIN(commentMultLine);}
 "\n"+	{ return TK_EOL;}
 "+"	{ return TK_Op_add;}
@@ -59,7 +43,10 @@ int  validateChar();
 "-="    { return TK_AutoSub;}
 "*="    { return TK_AutoMul;}
 "/="    { return TK_AutoDiv;}
-"^="    { return TK_AsigOrBit;}
+"%="    { return TK_AutoMod;}
+"|="    { return TK_AsigOrBit;}
+"&="    { return TK_AsigAndBit;}
+"^="    { return TK_AsigXorBit;}
 "<<="   { return TK_AsigCorIzq;}
 ">>="   { return TK_AsigCorDer;}
 "++"    { return TK_Incremento;}
@@ -79,6 +66,7 @@ int  validateChar();
 "printf" { return TK_Print;}
 "scanf" { return TK_Scanf;}
 "while" { return TK_While;}
+"do" { return TK_Do;}
 \"      { BEGIN(stringState);}
 \'      { BEGIN(charState);}
 "0x"[0-9a-fA-F]+ { yylval.int_t =(int)strtol(yytext, NULL, 16); return TK_NUMERO;}
@@ -86,7 +74,7 @@ int  validateChar();
 [0-9]+ { yylval.int_t = atoi(yytext); return TK_NUMERO;}
 [a-zA-Z_][a-zA-Z0-9_]* {  yylval.string_t = strdup(yytext); return TK_VarNombre; }
 .	{ return TK_Error;}
-<INITIAL><<EOF>> { if(pop_file() != 0 ) yyterminate(); }
+<INITIAL><<EOF>> { yyterminate(); }
 
 
 
@@ -135,7 +123,7 @@ int  validateChar();
       		  BEGIN(INITIAL);
 		  return TK_CharLit; 
 		}
-<charState>[\"] { if(validateChar()==1)
+<charState>'\"' { if(validateChar()==1)
 		  yyterminate();
 		  yylval.char_t = '\"';
       		  BEGIN(INITIAL);
@@ -161,90 +149,12 @@ int  validateChar();
 			return TK_String;
 			
 		      } 
-<include>[^\"\n]+ { 
-			{
-				int c;
-				int cerrado = 0;
-				while((c = yyinput()) != '\n'){						
-					if(c != 34 && c != 32){
-					  fprintf(stderr,"line %d Error :include no more expression \n",yylineno);
-					 yyterminate();		
-					}
-									
-				}
-				if(cerrado == 0){ 
-					 fprintf(stderr,"line %d Error :include without end \n",yylineno);
-					 yyterminate();
-				}
-				yylineno++;
-				if(push_file(yytext) != 0)
-					yyterminate();	
-			}
-			BEGIN(INITIAL);
-		  }
-<includeM>[^>\n]+ { 
-			{
-				int c;
-				int cerrado = 0;
-				while((c = yyinput()) != '\n'){						
-									
-					if(c != 62 && c != 32){
-					 fprintf(stderr,"line %d Error :include no more expression \n",yylineno);
-					 yyterminate();		
-					}		
-					cerrado = 1;		
-				}
-				if(cerrado == 0){ 
-					 fprintf(stderr,"line %d Error :include without end \n",yylineno);
-					 yyterminate();
-				}
-				yylineno++;
-				if(push_file(yytext) != 0)
-					yyterminate();	
-			}
-			BEGIN(INITIAL);
-		  }
-
 
 <commentMultLine>"*/" { BEGIN(INITIAL);}
 <commentMultLine>.|\n { /*nada */ }
 <commentMultLine><<EOF>> { printf("line: %d Block comment without end \n",yylineno); yyterminate(); return 0;}
 %%
-int push_file (char *filename ){
-	FILE *f  = fopen(filename,"r");
-       if(f == NULL){
-		fprintf(stderr,"file %s no found",filename);
-		return 1;
-	}
-	
-	include_stack_t *is = (include_stack_t*)malloc(sizeof(include_stack_t));
-	if(is == NULL){
-		fprintf(stderr,"out memory");
-		return 1;
-	}
-	is->f = f;
-	is->lineno = yylineno;
-        is->filename = yyfilename; 
-        is->bs = yy_create_buffer(f,YY_BUF_SIZE);
-        is->prev = inc_stack;
-        inc_stack = is;
-        yyfilename = filename;
-        yylineno = 1;
-        yy_switch_to_buffer(is->bs);
-	return 0;
-}
-int pop_file(){
-        include_stack_t * prev_is = inc_stack->prev;
-	fclose(inc_stack->f);
-	yy_delete_buffer(inc_stack->bs);
-	yylineno = inc_stack->lineno;
-	yyfilename = inc_stack->filename;
-	free(inc_stack);
-	if(prev_is == NULL) return 1;
-        yy_switch_to_buffer(prev_is->bs);
-	inc_stack = prev_is;
-	return 0;
-}
+
 int validateChar(){
 	int c;
 	while((c = yyinput()) != 39 ){						

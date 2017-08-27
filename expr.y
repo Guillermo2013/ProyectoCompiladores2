@@ -11,16 +11,16 @@ extern char* yytext;
 extern int yylineno;
 extern char *yyfilename;
 void yyerror(const char *msg){
-printf("Error : String(%s) Line %d : %s  file: %s caracter  \n",yytext,yylineno,msg,yyfilename);
+printf("Error : String(%s) Line %d : %s  file: %s   \n",yytext,yylineno,msg,yyfilename);
 }
 
 
 	
-#define YYERROR_VERBOSE 2
+#define YYERROR_VERBOSE 1
 #define YYDEBUG 1
 %}
 %glr-parser
-%expect 68
+%expect 74
 
 %union {
   Statement *statement_t;
@@ -28,6 +28,7 @@ printf("Error : String(%s) Line %d : %s  file: %s caracter  \n",yytext,yylineno,
   int int_t;
   char *string_t;
   char char_t;
+  ExprList *exprlist_t;
 }
 
 %token TK_Op_add TK_Op_sub TK_Op_mul TK_Op_div TK_left_par TK_rigth_par TK_EOL TK_Error TK_EOF TK_ERROR TK_Asignacion TK_Dolar 
@@ -35,14 +36,16 @@ printf("Error : String(%s) Line %d : %s  file: %s caracter  \n",yytext,yylineno,
 %token TK_left_llave TK_rigth_llave TK_VarNombre TK_While TK_left_corchete TK_rigth_corchete TK_Refenciacion TK_PuntoComma 
 %token TK_Char TK_Int TK_Void TK_For TK_Scanf TK_String TK_CharLit TK_Modulo TK_Comma TK_AutoAdd TK_AutoSub TK_AutoMul TK_AutoDiv
 %token TK_AsigOrBit TK_AsigCorIzq TK_AsigCorDer TK_Incremento TK_Decremento TK_CorrimientoIzq TK_CorrimientoDer TK_ExclPorBit TK_And TK_Or
-%token TK_OPorBit TK_Interogaccion TK_Negarcion TK_Complemento TK_DosPuntos
+%token TK_OPorBit TK_Interogaccion TK_Negarcion TK_Complemento TK_DosPuntos TK_AsigAndBit TK_AsigXorBit TK_AutoMod TK_Do
 
 %type <int_t> TK_NUMERO 
-%type <expr_t> expr term factor add conditional corrimiento exprForBit unary andOr
-%type <string_t> TK_VarNombre TK_String
+%type <expr_t> expr term factor add conditional corrimiento exprForBit unary andOr ternario assignExpr opAssign optionalAssign
+%type <string_t> TK_VarNombre TK_String Type
 %type <char_t> TK_CharLit
-%type <statement_t> statement assign_statement print_statement if_statement statementList while_statement
-%type <statement_t> BlockStatement producce_statement BlockStatementOrStatement for_statement for_assign
+%type <statement_t> statement assign_statement print_statement if_statement statementList while_statement scanf_statement 
+%type <statement_t> BlockStatement producce_statement BlockStatementOrStatement for_statement for_assign opAssignStatement  
+%type <statement_t> doWhile_statement declaration_statement funcion_statement callFuncion_statement optionalBlock 
+%type <exprlist_t> arg_list optionalParameter
 
 %%
 
@@ -56,15 +59,47 @@ statementList:statementList  opt_eols statement  {$$ = $1; ((BlockStatement*)$$)
 ;
 statement : if_statement {$$ = $1;}
 	  | while_statement {$$ = $1;}
-	  | print_statement {$$ = $1;}
+	  | print_statement TK_PuntoComma {$$ = $1;}
+	  | scanf_statement TK_PuntoComma	
           | assign_statement TK_PuntoComma {$$ = $1;}
 	  | producce_statement {$$ = $1;}
 	  | for_statement {$$ = $1;}
+	  | doWhile_statement TK_PuntoComma {$$ = $1;}
+	  | declaration_statement TK_PuntoComma {$$ = $1;}
+	  | funcion_statement {$$ =$1;}
+	  | callFuncion_statement TK_PuntoComma{$$ = $1;}
 ;
 
+callFuncion_statement : TK_VarNombre TK_left_par optionalParameter TK_rigth_par {$$ = new CallFuncionStatement($1,$3);}
+;
+optionalParameter:arg_list {$$ = $1;}
+		| {$$ = NULL;}
+;
+declaration_statement: Type TK_VarNombre TK_left_corchete  expr TK_rigth_corchete optionalAssign {$$ = new DecArrayStatement($1,$2,$4,$6);}	
+	              |Type TK_Op_mul TK_VarNombre optionalAssign {$$ = new DecApuntadorStatement($1,$3,$4);}
+ 		      |Type TK_VarNombre optionalAssign {$$ = new DecVariableStatement($1,$2,$3);}
+		      
+; 
+funcion_statement:Type TK_VarNombre TK_left_par TK_rigth_par opt_eols optionalBlock {$$ = new Funcion_Statement($1,$2,$6);}
+		 |Type TK_Op_mul TK_VarNombre TK_left_par TK_rigth_par opt_eols optionalBlock {$$ = new Funcion_Statement($1,$3,$7);}	
+		 
+;
+
+optionalBlock:BlockStatement{$$ = $1;}
+	     |TK_PuntoComma {$$ = NULL;}
+;
+optionalAssign :TK_Asignacion expr %dprec 1 {$$ = $2;}
+		|TK_Asignacion TK_String %dprec 3 { $$ = new StringExpr($2);}
+		|TK_Asignacion TK_left_llave arg_list TK_rigth_llave %dprec 4 {$$ = new ArrayExpr($3);}		
+		| %dprec 2 {$$ = NULL;}
+;
+
+Type: TK_Int { $$ = "int";}
+     |TK_Char  { $$ = "char";}
+;
 for_statement: TK_For TK_left_par opt_eols for_assign opt_eols TK_PuntoComma opt_eols expr opt_eols TK_PuntoComma opt_eols expr opt_eols TK_rigth_par opt_eols BlockStatementOrStatement { $$ = new For_Statement($4,$8,$12,$16);};
 ;
-for_assign : TK_VarNombre TK_Asignacion expr %dprec 2 { $$  = new AssignStatement($1,$3); }
+for_assign : assign_statement %dprec 2 { $$  = $1; }
 	   |  %dprec 1 {$$ = NULL;}
 ;
 
@@ -76,6 +111,9 @@ if_statement :TK_IF TK_left_par expr TK_rigth_par eols BlockStatementOrStatement
 while_statement : TK_While TK_left_par expr TK_rigth_par opt_eols BlockStatementOrStatement {$$ = new While_Statement($3,$6);}
 ;
 
+doWhile_statement  : TK_Do opt_eols BlockStatementOrStatement opt_eols TK_While TK_left_par expr TK_rigth_par  {$$ = new DoWhile_Statement($7,$3);}
+;
+
 BlockStatementOrStatement: statement { $$ = new BlockStatement(); ((BlockStatement*)$$)->addStatement($1);}
 			 | BlockStatement { $$ = $1;}	
 ;
@@ -83,26 +121,82 @@ BlockStatementOrStatement: statement { $$ = new BlockStatement(); ((BlockStateme
 BlockStatement: TK_left_llave opt_eols statementList opt_eols TK_rigth_llave  { $$ = $3;}	
 ;
 
-print_statement : TK_Print expr { $$ = new PrintStatement($2);}
-
+print_statement : TK_Print TK_left_par TK_String TK_Comma arg_list TK_rigth_par { $$ = new PrintStatement($3,$5);}
+		|TK_Print TK_left_par TK_String TK_rigth_par { $$ = new PrintStatement($3,NULL);}
+		
 ;
+
+scanf_statement :TK_Scanf TK_left_par TK_String TK_Comma arg_list TK_rigth_par { $$ = new ScanfStatement($3,$5);}
+		|TK_Scanf TK_left_par TK_String TK_rigth_par { $$ = new ScanfStatement($3,NULL);}		
+;
+
+
+arg_list: arg_list TK_Comma expr { $$ = $1;$$->push_back($3); }
+	| expr { $$ = new ExprList; $$->push_back($1); }
+;
+
 
 producce_statement : TK_Void TK_VarNombre TK_left_par TK_rigth_par opt_eols BlockStatement {$$ = new Producer_Statement($2,$6);}
 ;
 
-assign_statement : TK_VarNombre TK_Asignacion expr    {  $$  = new AssignStatement($1,$3);}
-		 | TK_VarNombre TK_left_corchete  expr TK_rigth_corchete  TK_Asignacion expr   {$$ = NULL;}
-		 | TK_Refenciacion TK_VarNombre TK_Asignacion expr  {  $$  = NULL;}
-		 | TK_Op_mul TK_VarNombre TK_Asignacion expr {$$ = NULL;}
+assign_statement : TK_VarNombre opAssignStatement expr { $$ = $2; ((AssignStatement*)$$)->nombre = new VarNombreExpr($1);
+		 ((AssignStatement*)$$)->expr1 = $3; }
+		 | TK_VarNombre TK_left_corchete  expr TK_rigth_corchete  opAssignStatement expr{ 
+                 $$ = $5;((AssignStatement*)$$)->nombre = new VarNombreArrayExpr($1,$3); ((AssignStatement*)$$)->expr1 = $6; }
+		 | TK_Refenciacion TK_VarNombre opAssignStatement expr  { 
+	    	 $$ = $3; ((AssignStatement*)$$)->nombre = new ReferenciaVarExpr($2); ((AssignStatement*)$$)->expr1 = $4; }
+		 | TK_Op_mul TK_VarNombre opAssignStatement expr  { 
+	    	 $$ = $3; ((AssignStatement*)$$)->nombre = new DesreferenciaExpr($2); ((AssignStatement*)$$)->expr1 = $4; }
 ;
+	
+opAssignStatement : TK_Asignacion {$$ = new AsignarStatement(NULL,NULL);}
+	 | TK_AutoAdd {$$ = new MasIgualStatement(NULL,NULL); }
+	 | TK_AutoSub {$$ = new MenosIgualStatement(NULL,NULL);}
+ 	 | TK_AutoMul {$$ = new MultIgualStatement(NULL,NULL);}
+	 | TK_AutoDiv {$$ = new DivIgualStatement(NULL,NULL);}
+	 | TK_AutoMod {$$ = new ModIgualStatement(NULL,NULL);}
+	 | TK_AsigOrBit {$$ = new OrBitIgualStatement(NULL,NULL);}
+	 | TK_AsigAndBit {$$ = new AndBitIgualStatement(NULL,NULL);}
+	 | TK_AsigXorBit {$$ = new XorBitIgualStatement(NULL,NULL);}
+	 | TK_AsigCorIzq {$$ = new AsigCorIzqIgualStatement(NULL,NULL);}
+	 | TK_AsigCorDer {$$ = new AsigCorDerIgualStatement(NULL,NULL);}
+;
+
 eols:eols TK_EOL
      |TK_EOL 
 ;
 opt_eols:opt_eols TK_EOL 
 	|
 ;
-expr:andOr TK_Interogaccion expr TK_DosPuntos expr  %dprec 2 { $$ = new TernarioExpr($1,$3,$5);}
-    |andOr  %dprec 1 {$$ = $1;}
+
+
+
+expr : assignExpr %dprec 2 {$$ = $1;}
+	|ternario %dprec 1 {$$ = $1;}
+;
+assignExpr : TK_VarNombre opAssign expr { $$ = $2; ((AssignExpr*)$$)->nombre = new VarNombreExpr($1); ((AssignExpr*)$$)->expr1 = $3; }
+	    | TK_VarNombre TK_left_corchete  expr TK_rigth_corchete  opAssign expr { 
+            $$ = $5;((AssignExpr*)$$)->nombre = new VarNombreArrayExpr($1,$3); ((AssignExpr*)$$)->expr1 = $6; }
+	    | TK_Refenciacion TK_VarNombre opAssign expr  { 
+	    $$ = $3; ((AssignExpr*)$$)->nombre = new ReferenciaVarExpr($2); ((AssignExpr*)$$)->expr1 = $3; }
+	    | TK_Op_mul TK_VarNombre opAssign expr  { 
+	    $$ = $3; ((AssignExpr*)$$)->nombre = new DesreferenciaExpr($2); ((AssignExpr*)$$)->expr1 = $3; }
+;
+opAssign : TK_Asignacion {$$ = new AsignarExpr(NULL,NULL);}
+	 | TK_AutoAdd {$$ = new MasIgualExpr(NULL,NULL); }
+	 | TK_AutoSub {$$ = new MenosIgualExpr(NULL,NULL);}
+ 	 | TK_AutoMul {$$ = new MultIgualExpr(NULL,NULL);}
+	 | TK_AutoDiv {$$ = new DivIgualExpr(NULL,NULL);}
+	 | TK_AutoMod {$$ = new ModIgualExpr(NULL,NULL);}
+	 | TK_AsigOrBit {$$ = new OrBitIgualExpr(NULL,NULL);}
+	 | TK_AsigAndBit {$$ = new AndBitIgualExpr(NULL,NULL);}
+	 | TK_AsigXorBit {$$ = new XorBitIgualExpr(NULL,NULL);}
+	 | TK_AsigCorIzq {$$ = new AsigCorIzqIgualExpr(NULL,NULL);}
+	 | TK_AsigCorDer {$$ = new AsigCorDerIgualExpr(NULL,NULL);}
+;
+
+ternario:conditional TK_Interogaccion expr TK_DosPuntos expr  %dprec 2 { $$ = new TernarioExpr($1,$3,$5);}
+        |andOr  %dprec 1 {$$ = $1;}
 ;
 andOr:andOr TK_And exprForBit %dprec 2 { $$ = new AndExpr($1,$3); }
     |andOr TK_Or exprForBit %dprec 3 { $$ = new OrExpr($1,$3); }
@@ -156,7 +250,7 @@ unary : TK_Negarcion expr {$$ = new NegacionExpr($2);}
 	
 factor: TK_VarNombre {  $$ = new VarNombreExpr($1);}
        | TK_NUMERO { $$ = new NumberExpr($1);}
-       | TK_String { $$ = new StringExpr($1);}
        | TK_CharLit { $$ = new CharExpr($1);}
+       | TK_VarNombre TK_left_corchete  expr TK_rigth_corchete {$$  = new VarNombreArrayExpr($1,$3);}
        | TK_left_par expr TK_rigth_par { $$ = $2;}      
 ;
