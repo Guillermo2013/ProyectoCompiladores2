@@ -1,7 +1,7 @@
 TARGET=exemploClase
 EXPR_PARSE_SRC = expr_parser.cpp
 EXPR_LEXER_SRC = expr_lexer.cpp
-SRCFILES = $(EXPR_PARSE_SRC) $(EXPR_LEXER_SRC) ash.cpp main.cpp 
+SRCFILES = $(EXPR_PARSE_SRC) $(EXPR_LEXER_SRC) ash.cpp Semantico.cpp main.cpp 
 OBJ_FILE = ${SRCFILES:.cpp=.o}
 
 .PHONY: clean 

@@ -65,6 +65,7 @@ int  validateChar();
 "else"  { return TK_Else;}
 "printf" { return TK_Print;}
 "scanf" { return TK_Scanf;}
+"return" { return TK_Return;}
 "while" { return TK_While;}
 "do" { return TK_Do;}
 \"      { BEGIN(stringState);}

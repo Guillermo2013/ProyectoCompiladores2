@@ -113,7 +113,8 @@ extern int yydebug;
     TK_AsigAndBit = 317,
     TK_AsigXorBit = 318,
     TK_AutoMod = 319,
-    TK_Do = 320
+    TK_Do = 320,
+    TK_Return = 321
   };
 #endif
 
@@ -130,8 +131,9 @@ union YYSTYPE
   char *string_t;
   char char_t;
   ExprList *exprlist_t;
+  Parametro *parametro_t;
 
-#line 135 "tokens.h" /* glr.c:197  */
+#line 137 "tokens.h" /* glr.c:197  */
 };
 
 typedef union YYSTYPE YYSTYPE;

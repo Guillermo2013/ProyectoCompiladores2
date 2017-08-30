@@ -1,108 +1,153 @@
 #include "ash.h"
-
 #include <stdio.h>
 #include <cstring>
-
 #include <stdlib.h>
-int vars[8];
-
-map< char *, int > variablesNombres;
-
 typedef pair<char *, int> elemento;
-
-#define IMPLEMENT_BINARY_EXPR_EVAL(name,opr) \
-	int name##Expr::eval(){ \
-	int v1 = expr1->eval(); \
-	int v2 = expr2->eval(); \
-	return v1 opr v2; \
+StackContenido *stack = new StackContenido();
+Tipo* ArrayExpr :: ValidateSemantic(){
+  ExprList::iterator it = value->begin();
+    Expr * primero = *it;
+    while (it != value->end()) {
+      Expr * st = *it;
+       if(st->ValidateSemantic()->isA(primero->ValidateSemantic()->getKind())){
+         cout<< "Error : arreglo de diferentes tipos" << endl;
+         exit(-1);
+       }
+       it++;
+    }
+    return new ArrayTipo(primero->ValidateSemantic());
 }
 
-	
-IMPLEMENT_BINARY_EXPR_EVAL(Add,+);
-IMPLEMENT_BINARY_EXPR_EVAL(Sub,-);
-IMPLEMENT_BINARY_EXPR_EVAL(Mult,*);
-IMPLEMENT_BINARY_EXPR_EVAL(Div,/);
-IMPLEMENT_BINARY_EXPR_EVAL(Igual,==);
-IMPLEMENT_BINARY_EXPR_EVAL(Distinto,!=);
-IMPLEMENT_BINARY_EXPR_EVAL(Mayor,>);
-IMPLEMENT_BINARY_EXPR_EVAL(Menor,<);
-IMPLEMENT_BINARY_EXPR_EVAL(MayorIgual,>=);
-IMPLEMENT_BINARY_EXPR_EVAL(MenorIgual,<=);
-IMPLEMENT_BINARY_EXPR_EVAL(Or,||);
-IMPLEMENT_BINARY_EXPR_EVAL(And,&&);
-IMPLEMENT_BINARY_EXPR_EVAL(Mod,%);
-IMPLEMENT_BINARY_EXPR_EVAL(CorrimientoIzq,<<);
-IMPLEMENT_BINARY_EXPR_EVAL(CorrimientoDer,>>);
-IMPLEMENT_BINARY_EXPR_EVAL(OPorBit,|);
-IMPLEMENT_BINARY_EXPR_EVAL(ExclPorBit,^);
-IMPLEMENT_BINARY_EXPR_EVAL(YPorBit,&);
+Tipo* TernarioExpr :: ValidateSemantic(){
+  
+  if(!expr1->ValidateSemantic()->isA(expr2->ValidateSemantic()->getKind())){
+         cout<< "Error : expresiones diferentes ternario" << endl;
+         exit(1);
+    }
 
+    return expr1->ValidateSemantic();
+}
 
-
-int VarNombreExpr::eval(){
-map<char *, int>::iterator p = variablesNombres.begin();
-  while (p != variablesNombres.end() )
-  {
-    if(strcmp(p->first,index) == 0)
-      return p->second;
-   
-    p ++;
-    
+Tipo* VarNombreExpr:: ValidateSemantic(){
+  list<TablaSimbolos*>::iterator it = stack->Stack.begin();
+  while (it != stack->Stack.end()) {
+    TablaSimbolos * st = *it;
+     if(st->VariableExist(index)){
+        return st->GetVariable(index);
+     }
+     it++;
   }
- cout<<"Error : Variable not exit "<<endl;
- exit (1);
+  cout<< "Error : variable no existe "<< index << endl;
+ 
+}
+Tipo* VarNombreArrayExpr :: ValidateSemantic(){
+  
+  if(!expr1->ValidateSemantic()->isA(intTipo))
+  {
+    cout<< "Error : la expresion tiene que se un int " << endl;
+  
+  }
+  list<TablaSimbolos*>::iterator it = stack->Stack.begin();
+  while (it != stack->Stack.end()) {
+    TablaSimbolos * st = *it;
+     if(st->VariableExist(index)){
+        if(st->GetVariable(index)->isA(arrayTipo)){
+          return ((ArrayTipo*)st->GetVariable(index))->tipoArray;
+        }else{
+          cout<< "Error : la variable no es un arreglo "<< index << endl;
+          exit(1);
+        }
+     }
+     it++;
+  }
+  cout<< "Error : variable no existe   "<<index << endl;
+  exit(1);
+}
+
+#define IMPLEMENT_BINARY_COMP_SEMANTIC(name) \
+  Tipo* name##Expr::ValidateSemantic(){ \
+  return new IntTipo(); \
+}
+
+IMPLEMENT_BINARY_COMP_SEMANTIC(Igual);
+IMPLEMENT_BINARY_COMP_SEMANTIC(Distinto);
+IMPLEMENT_BINARY_COMP_SEMANTIC(Mayor);
+IMPLEMENT_BINARY_COMP_SEMANTIC(Menor);
+IMPLEMENT_BINARY_COMP_SEMANTIC(MayorIgual);
+IMPLEMENT_BINARY_COMP_SEMANTIC(MenorIgual);
+
+
+#define IMPLEMENT_BINARY_EXPR_SEMANTIC(name) \
+  Tipo* name##Expr::ValidateSemantic(){ \
+    Tipo * valor = expr1->ValidateSemantic();\
+  if(valor->isA(arrayTipo) || expr1->ValidateSemantic()->isA(arrayTipo)||\
+    valor->isA(procedimientoTipo) || expr1->ValidateSemantic()->isA(procedimientoTipo)){\
+    cout<< "Error : no se puede realizar operaciones con arreglos o con funciones void " << endl;\
+    exit(-1);\
+  }\
+  return valor; \
+}
+
+IMPLEMENT_BINARY_EXPR_SEMANTIC(Add);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(Sub);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(Mult);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(Div);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(Or);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(And);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(Mod);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(CorrimientoIzq);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(CorrimientoDer);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(OPorBit);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(ExclPorBit);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(YPorBit);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(MasIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(MenosIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(MultIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(DivIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(ModIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(OrBitIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(AndBitIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(XorBitIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(AsigCorIzqIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC(AsigCorDerIgual);
+
+
+Tipo* DesferenciaExpr :: ValidateSemantic(){
+  Tipo * tipo = expr1->ValidateSemantic();
+    if(tipo->isA(apuntadorTipo))
+      return ((ApuntadorTipo*)tipo)->tipoApuntador;
+
+    cout<< "Error : la variable no es un apuntador " << endl;\
+    exit(-1);\
+
+}
+#define IMPLEMENT_BINARY_INC_SEMANTIC(name) \
+  Tipo* name##Expr::ValidateSemantic(){ \
+    Tipo * valor = expr1->ValidateSemantic();\
+  if(valor->isA(funcionTipo) || expr1->ValidateSemantic()->isA(funcionTipo)||\
+    valor->isA(procedimientoTipo) || expr1->ValidateSemantic()->isA(procedimientoTipo)){\
+    cout<< "Error : no se puede realizar operaciones con  funciones  " << endl;\
+    exit(-1);\
+  }\
+  return valor; \
+}
+
+IMPLEMENT_BINARY_INC_SEMANTIC(PreIncremento);
+IMPLEMENT_BINARY_INC_SEMANTIC(PreDecremento);
+IMPLEMENT_BINARY_INC_SEMANTIC(PosIncremento);
+IMPLEMENT_BINARY_INC_SEMANTIC(PosDecremento);
+
+Tipo* NegacionExpr :: ValidateSemantic(){
+}
+Tipo* ComplementoExpr :: ValidateSemantic(){
   
 }
+Tipo* AsignarExpr :: ValidateSemantic(){
 
 
-void PrintStatement:: exec(){
-  cout <<string << "\n";
-}
-void If_Statement::exec(){
- int v1 = expr->eval();
-
- if(v1 == 1)
-   ifStatement->exec();
- else
-   elseStatement->exec();
-}
-void While_Statement::exec(){
-
-
- while( expr->eval()  == 1)
-   whileStatement->exec();
- 
 }
 
-void DoWhile_Statement::exec(){
-
- do
-  DowhileStatement->exec();
- while( expr->eval()  == 1);
-   
- 
+Tipo* ReferenciaExpr :: ValidateSemantic(){
 }
-
-void BlockStatement::exec(){
-  if(!listStatement.empty())
-  {
-    list<Statement*>::iterator pos;
-    pos = listStatement.begin();
-    while(pos != listStatement.end())
-    {
-      if(*pos != NULL)
-      (*pos)->exec();
-      pos++;
-    }
-  }	
-}
-void Producer_Statement::exec(){
-  	
-}
-void For_Statement::exec(){
-  	
-}
-
-void ScanfStatement::exec(){
-  cout <<string << "\n";	
+Tipo* FuncionExpr :: ValidateSemantic(){
 }

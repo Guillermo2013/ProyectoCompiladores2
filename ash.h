@@ -4,24 +4,22 @@
 #include <map>
 #include <iostream>
 #include <stdio.h>
-	
+#include "Semantico.h"	
 using namespace std;
-
-
 
 class Expr{
 public:
- virtual int eval() = 0;
+virtual Tipo* ValidateSemantic() = 0;
 };
 
 typedef list<Expr*> ExprList;
-
 class BinaryExpr:public Expr{
  protected:
 	BinaryExpr(Expr *expr1,Expr *expr2){
 		this->expr1 = expr1;
 		this->expr2 = expr2;	
 	}
+
  public:
 	Expr *expr1,*expr2;
  	
@@ -51,9 +49,10 @@ class AssignExpr:public Expr{
 #define DEFINE_BINARY_EXPR(name) \
 	class name##Expr : public BinaryExpr { \
 	public : \
-		name##Expr(Expr *expr1,Expr *expr2):BinaryExpr(expr1,expr2){} \
-		int eval(); \
-}
+		name##Expr(Expr *expr1,Expr *expr2):BinaryExpr(expr1,expr2){\
+		} \
+		Tipo* ValidateSemantic();\
+	}
 
 DEFINE_BINARY_EXPR(Add);
 DEFINE_BINARY_EXPR(Sub);
@@ -78,8 +77,9 @@ DEFINE_BINARY_EXPR(YPorBit);
 	class name##Expr : public UnaryExpr { \
 	public : \
 		name##Expr(Expr *expr1):UnaryExpr(expr1){} \
-		int eval(){return 0;} \
+		Tipo* ValidateSemantic();\
 }
+
 DEFINE_UNARY_EXPR(Desferencia);
 DEFINE_UNARY_EXPR(PreIncremento);
 DEFINE_UNARY_EXPR(PreDecremento);
@@ -93,7 +93,7 @@ DEFINE_UNARY_EXPR(Complemento);
 	class name##Expr : public AssignExpr { \
 	public : \
 		name##Expr(Expr *nombre,Expr *expr1):AssignExpr(nombre,expr1){} \
-		int eval(){return 0;} \
+		Tipo* ValidateSemantic();\
 }
 
 DEFINE_ASSIGN_EXPR(Asignar);
@@ -113,12 +113,13 @@ class TernarioExpr:public Expr{
 	TernarioExpr(Expr* condicion,Expr *expr1,Expr *expr2){
 		this->condicion = condicion;
 		this->expr1 = expr1;
-		this->expr2 = expr2;	
+		this->expr2 = expr2;
+		ValidateSemantic();
 	}	
 	Expr* condicion;
 	Expr *expr1;	
 	Expr *expr2;
-	int eval(){ return 0;}
+	Tipo* ValidateSemantic();
 };
 
 class NumberExpr:public Expr{
@@ -127,7 +128,7 @@ class NumberExpr:public Expr{
 		this->value = value;	
 	}	
 	int value;
-	int eval(){ return value;}
+	Tipo* ValidateSemantic(){ return new IntTipo();}
 };
 class StringExpr:public Expr{
  public:
@@ -135,7 +136,7 @@ class StringExpr:public Expr{
 		this->value = value;	
 	}	
 	char* value;
-	int eval(){ cout<<" "<< value <<endl; return 0;}
+	Tipo* ValidateSemantic(){ return new StringTipo();}
 };
 class CharExpr:public Expr{
  public:
@@ -143,16 +144,17 @@ class CharExpr:public Expr{
 		this->value = value;	
 	}	
 	char value;
-	int eval(){ cout<<" "<< value <<endl; return value;}
+	Tipo* ValidateSemantic(){ return new CharTipo();}
 };
 
 class ArrayExpr:public Expr{
  public:
 	ArrayExpr(ExprList *value){
-		this->value = value;	
+		this->value = value;
+	;	
 	}	
 	ExprList *value;
-	int eval(){  return 0;}
+	Tipo* ValidateSemantic();
 };
 
 
@@ -161,45 +163,43 @@ class ArrayExpr:public Expr{
 class VarNombreExpr:public Expr{
  public:
 	char *index;
-	int eval();
-	VarNombreExpr(char * index){
-		this->index = index;	
-	}	
 	
+	VarNombreExpr(char * index){
+		this->index = index;
+			
+	}
+	Tipo* ValidateSemantic();
 };
 class VarNombreArrayExpr:public Expr{
  public:
 	char *index;
 	Expr*expr1;
-	int eval(){return 0;};
+	
 	VarNombreArrayExpr(char * index,Expr*expr1){
 		this->index = index;
-		this->expr1 = expr1;	
+		this->expr1 = expr1;
+			
 	}	
-	
+	Tipo* ValidateSemantic();
 };
-class DesreferenciaExpr:public Expr{
- public:
-	char *index;
-	int eval(){return 0;};
-	DesreferenciaExpr(char * index){
-		this->index = index;	
-	}	
-	
-};
-class ReferenciaVarExpr:public Expr{
- public:
-	char *index;
-	int eval(){return 0;};
-	ReferenciaVarExpr(char * index){
-		this->index = index;	
-	}	
-	
-};
-class Statement{
- public: 
-	virtual void exec() = 0;
 
+class FuncionExpr: public Expr 
+{
+ public: 
+		
+		char* nombre;
+		ExprList * parametros;
+		FuncionExpr(char  * nombre,ExprList * parametros){
+			this->nombre = nombre;
+			this->parametros = parametros;
+			
+		}
+		Tipo* ValidateSemantic();
+
+};
+
+class Statement{
+ public: 	
 	
 };
 
@@ -221,8 +221,7 @@ class AssignStatement : public Statement{
 	class name##Statement : public AssignStatement { \
 	public : \
 		name##Statement(Expr *nombre,Expr *expr1):AssignStatement(nombre,expr1){} \
-		void exec(){} \
-}
+	}
 
 DEFINE_ASSIGN_Statement(Asignar);
 DEFINE_ASSIGN_Statement(MasIgual);
@@ -246,7 +245,7 @@ public:
       	 	this->lista = lista; 
 		this->string = string; 
     	}
-    void exec();
+    
     
 };
 
@@ -258,7 +257,7 @@ public:
       	 	this->lista = lista; 
 		this->string = string; 
     	}
-    void exec();
+   
     
 };
 class If_Statement : public Statement{
@@ -272,7 +271,7 @@ class If_Statement : public Statement{
 			this->elseStatement = elseStatement;
 		}
 
-		void exec();
+		
 };
 class While_Statement : public Statement{
 	public: 
@@ -285,7 +284,7 @@ class While_Statement : public Statement{
 			
 		}
 
-		void exec();
+		
 };
 
 class DoWhile_Statement : public Statement{
@@ -299,7 +298,7 @@ class DoWhile_Statement : public Statement{
 			
 		}
 
-		void exec();
+		
 };
 
 class BlockStatement : public Statement
@@ -310,7 +309,7 @@ class BlockStatement : public Statement
 	 listStatement.push_back(statement);
 	}
 	list<Statement*> listStatement;
-	void exec();
+	
 };
 
 
@@ -318,14 +317,16 @@ class Producer_Statement: public Statement
 {
  public: 
 		char* nombre;
+		Expr * parametros;
 		Statement *producerStatement;
-		Producer_Statement(char* nombre,Statement *producerStatement){
+		Producer_Statement(char* nombre,Expr * parametros,Statement *producerStatement){
 			this->nombre = nombre;
+			this->parametros = parametros;
 			this->producerStatement = producerStatement;
 			
 		}
 
-		void exec();
+		
 };
 
 class For_Statement: public Statement 
@@ -344,7 +345,7 @@ class For_Statement: public Statement
 			
 		}
 
-		void exec();
+		
 };
 
 class DecArrayStatement: public Statement 
@@ -363,7 +364,6 @@ class DecArrayStatement: public Statement
 			
 		}
 
-		void exec(){};
 };
 
 class DecApuntadorStatement: public Statement 
@@ -379,7 +379,7 @@ class DecApuntadorStatement: public Statement
 			
 		}
 
-		void exec(){};
+		
 };
 class DecVariableStatement: public Statement 
 {
@@ -396,7 +396,7 @@ class DecVariableStatement: public Statement
 			
 		}
 
-		void exec(){};
+		
 };
 class Funcion_Statement: public Statement 
 {
@@ -404,16 +404,32 @@ class Funcion_Statement: public Statement
 		
 		char  * type;
 		char* nombre;
+		Expr * parametros;
 		Statement *funcionStatement;
-		Funcion_Statement(char  * type,char  * nombre,Statement *funcionStatement){
+		Funcion_Statement(char  * type,char  * nombre,Expr * parametros,Statement *funcionStatement){
 			this->type = type;
 			this->nombre = nombre;
+			this->parametros = parametros;
 			this->funcionStatement = funcionStatement;
 			
 		}
 
-		void exec(){};
 };
+
+
+class Return_Statement: public Statement 
+{
+ public:	
+		
+		Expr * returnExpr;
+		Return_Statement(Expr * returnExpr){
+			this->returnExpr = returnExpr;
+			
+		}
+
+	
+};
+
 
 class CallFuncionStatement: public Statement 
 {
@@ -429,7 +445,34 @@ class CallFuncionStatement: public Statement
 			
 		}
 
-		void exec(){};
+		
 };
 
+class Parametro : public Expr
+{
+ public: 
+		
+		
+		char  * type;		
+		Expr * declaracion;
+		
+		Parametro(char  * type,Expr *declaracion){
+			this->type = type;
+			this->declaracion = declaracion;
+			
+		}
+
+		Tipo* ValidateSemantic(){return new IntTipo();}
+};
+
+class Parametros : public Expr
+{
+ public :
+	Parametros(){};
+	void addParametro(Parametro *parametro){
+	 listParametro.push_back(parametro);
+	}
+		list<Parametro*> listParametro;
+	Tipo* ValidateSemantic(){return new IntTipo();}
+};
 #endif 
