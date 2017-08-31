@@ -163,9 +163,7 @@ BlockStatementOrStatement: statement { $$ = new BlockStatement(); ((BlockStateme
 ;
  
 
-
-
-
+	
 print_statement : TK_Print TK_left_par TK_String TK_Comma arg_list TK_rigth_par { $$ = new PrintStatement($3,$5);}
 		|TK_Print TK_left_par TK_String TK_rigth_par { $$ = new PrintStatement($3,NULL);}
 		

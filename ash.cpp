@@ -10,8 +10,8 @@ Tipo* ArrayExpr :: ValidateSemantic(){
     while (it != value->end()) {
       Expr * st = *it;
        if(st->ValidateSemantic()->isA(primero->ValidateSemantic()->getKind())){
-         cout<< "Error : arreglo de diferentes tipos" << endl;
-         exit(-1);
+         cout<< "Error : arreglo de diferentes tipos linea " << yylineno <<  endl;
+         exit(0);
        }
        it++;
     }
@@ -21,8 +21,8 @@ Tipo* ArrayExpr :: ValidateSemantic(){
 Tipo* TernarioExpr :: ValidateSemantic(){
   
   if(!expr1->ValidateSemantic()->isA(expr2->ValidateSemantic()->getKind())){
-         cout<< "Error : expresiones diferentes ternario" << endl;
-         exit(1);
+         cout<< "Error : expresiones diferentes ternario linea " << yylineno <<  endl;
+         exit(0);
     }
 
     return expr1->ValidateSemantic();
@@ -44,7 +44,7 @@ Tipo* VarNombreArrayExpr :: ValidateSemantic(){
   
   if(!expr1->ValidateSemantic()->isA(intTipo))
   {
-    cout<< "Error : la expresion tiene que se un int " << endl;
+    cout<< "Error : la expresion tiene que se un int linea " << endl;
   
   }
   list<TablaSimbolos*>::iterator it = stack->Stack.begin();
@@ -54,7 +54,7 @@ Tipo* VarNombreArrayExpr :: ValidateSemantic(){
         if(st->GetVariable(index)->isA(arrayTipo)){
           return ((ArrayTipo*)st->GetVariable(index))->tipoArray;
         }else{
-          cout<< "Error : la variable no es un arreglo "<< index << endl;
+          cout<< "Error : la variable no es un arreglo linea "<< index << yylineno <<  endl;
           exit(1);
         }
      }
@@ -82,8 +82,8 @@ IMPLEMENT_BINARY_COMP_SEMANTIC(MenorIgual);
     Tipo * valor = expr1->ValidateSemantic();\
   if(valor->isA(arrayTipo) || expr1->ValidateSemantic()->isA(arrayTipo)||\
     valor->isA(procedimientoTipo) || expr1->ValidateSemantic()->isA(procedimientoTipo)){\
-    cout<< "Error : no se puede realizar operaciones con arreglos o con funciones void " << endl;\
-    exit(-1);\
+    cout<< "Error : no se puede realizar operaciones con arreglos o con funciones void linea "<< yylineno <<  endl;\
+    exit(0);\
   }\
   return valor; \
 }
@@ -117,8 +117,8 @@ Tipo* DesferenciaExpr :: ValidateSemantic(){
     if(tipo->isA(apuntadorTipo))
       return ((ApuntadorTipo*)tipo)->tipoApuntador;
 
-    cout<< "Error : la variable no es un apuntador " << endl;\
-    exit(-1);\
+    cout<< "Error : la variable no es un apuntador linea " << endl;\
+    exit(0);\
 
 }
 #define IMPLEMENT_BINARY_INC_SEMANTIC(name) \
@@ -126,28 +126,122 @@ Tipo* DesferenciaExpr :: ValidateSemantic(){
     Tipo * valor = expr1->ValidateSemantic();\
   if(valor->isA(funcionTipo) || expr1->ValidateSemantic()->isA(funcionTipo)||\
     valor->isA(procedimientoTipo) || expr1->ValidateSemantic()->isA(procedimientoTipo)){\
-    cout<< "Error : no se puede realizar operaciones con  funciones  " << endl;\
-    exit(-1);\
+    cout<< "Error : no se puede realizar operaciones con  funciones  linea " << yylineno << endl;\
+    exit(0);\
   }\
-  return valor; \
-}
+  return valor; }
 
 IMPLEMENT_BINARY_INC_SEMANTIC(PreIncremento);
 IMPLEMENT_BINARY_INC_SEMANTIC(PreDecremento);
 IMPLEMENT_BINARY_INC_SEMANTIC(PosIncremento);
 IMPLEMENT_BINARY_INC_SEMANTIC(PosDecremento);
 
+
+
 Tipo* NegacionExpr :: ValidateSemantic(){
+
+   Tipo * valor = expr1->ValidateSemantic();
+  if(valor->isA(procedimientoTipo) || expr1->ValidateSemantic()->isA(procedimientoTipo)){
+    cout<< "Error : no se puede realizar operaciones con  funciones void linea "<< yylineno <<  endl;
+    exit(0);
+  }
+  return valor; 
 }
 Tipo* ComplementoExpr :: ValidateSemantic(){
   
+   Tipo * valor = expr1->ValidateSemantic();
+  if(valor->isA(arrayTipo) || expr1->ValidateSemantic()->isA(arrayTipo)||
+    valor->isA(procedimientoTipo) || expr1->ValidateSemantic()->isA(procedimientoTipo)){
+    cout<< "Error : no se puede realizar operaciones con  funciones void y arrays linea "<< yylineno <<  endl;
+    exit(0);
+  }
+  return valor;
 }
 Tipo* AsignarExpr :: ValidateSemantic(){
-
-
+  
 }
 
 Tipo* ReferenciaExpr :: ValidateSemantic(){
 }
 Tipo* FuncionExpr :: ValidateSemantic(){
+}
+
+#define IMPLEMENT_ASSIGN_STATEMENT_SEMANTIC(name) \
+  void name##Statement::ValidateSemantic(){ \
+    Tipo * valor = nombre->ValidateSemantic();\
+  if(valor->isA(arrayTipo) || expr1->ValidateSemantic()->isA(arrayTipo)||\
+    valor->isA(procedimientoTipo) || expr1->ValidateSemantic()->isA(procedimientoTipo)){\
+    cout<< "Error : no se puede realizar operaciones con arreglos o con funciones void linea "<< yylineno <<  endl;\
+    exit(0);\
+   }\
+}
+
+IMPLEMENT_ASSIGN_STATEMENT_SEMANTIC(Asignar);
+IMPLEMENT_ASSIGN_STATEMENT_SEMANTIC(MasIgual);
+IMPLEMENT_ASSIGN_STATEMENT_SEMANTIC(MenosIgual);
+IMPLEMENT_ASSIGN_STATEMENT_SEMANTIC(MultIgual);
+IMPLEMENT_ASSIGN_STATEMENT_SEMANTIC(DivIgual);
+IMPLEMENT_ASSIGN_STATEMENT_SEMANTIC(ModIgual);
+IMPLEMENT_ASSIGN_STATEMENT_SEMANTIC(OrBitIgual);
+IMPLEMENT_ASSIGN_STATEMENT_SEMANTIC(AndBitIgual);
+IMPLEMENT_ASSIGN_STATEMENT_SEMANTIC(XorBitIgual);
+IMPLEMENT_ASSIGN_STATEMENT_SEMANTIC(AsigCorIzqIgual);
+IMPLEMENT_ASSIGN_STATEMENT_SEMANTIC(AsigCorDerIgual);
+
+#define IMPLEMENT_INOUT_STATEMENT_SEMANTIC(name) \
+void name##Statement :: ValidateSemantic(){\
+  ExprList::iterator it = lista->begin();\
+    while (it != lista->end()) {\
+      Expr * st = *it;\
+       st->ValidateSemantic();\
+       it++;\
+    }\
+}
+IMPLEMENT_INOUT_STATEMENT_SEMANTIC(Print);
+IMPLEMENT_INOUT_STATEMENT_SEMANTIC(Scanf);
+
+void If_Statement :: ValidateSemantic(){
+  if( expr->ValidateSemantic()->isA(arrayTipo)||  expr->ValidateSemantic()->isA(procedimientoTipo)){
+    cout<< "Error : no se puede realizar operaciones con arreglos o con funciones void linea "<< yylineno <<  endl;
+    exit(0);
+   }
+
+  ifStatement->ValidateSemantic();
+  elseStatement->ValidateSemantic();
+}
+void While_Statement :: ValidateSemantic(){
+  if( expr->ValidateSemantic()->isA(arrayTipo)||  expr->ValidateSemantic()->isA(procedimientoTipo)){
+    cout<< "Error : no se puede realizar operaciones con arreglos o con funciones void linea "<< yylineno <<  endl;
+    exit(0);
+   }
+
+  whileStatement->ValidateSemantic();
+}
+
+void DoWhile_Statement :: ValidateSemantic(){
+  if( expr->ValidateSemantic()->isA(arrayTipo)||  expr->ValidateSemantic()->isA(procedimientoTipo)){
+    cout<< "Error : no se puede realizar operaciones con arreglos o con funciones void linea "<< yylineno <<  endl;
+    exit(0);
+   }
+
+  DowhileStatement->ValidateSemantic();
+}
+
+void BlockStatement :: ValidateSemantic(){
+  list<Statement*>::iterator it = listStatement.begin();
+    while (it != listStatement.end()) {
+      Statement * st = *it;
+       st->ValidateSemantic();
+       it++;
+    }
+}
+
+void For_Statement :: ValidateSemantic(){
+  inicializacion->ValidateSemantic();
+   if( condicional->ValidateSemantic()->isA(arrayTipo)||  condicional->ValidateSemantic()->isA(procedimientoTipo)||
+    incremento->ValidateSemantic()->isA(arrayTipo)||  incremento->ValidateSemantic()->isA(procedimientoTipo)){
+    cout<< "Error : no se puede realizar operaciones con arreglos o con funciones void linea "<< yylineno <<  endl;
+    exit(0);
+   }
+  ForStatement->ValidateSemantic();
 }

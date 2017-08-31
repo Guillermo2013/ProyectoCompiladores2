@@ -4,9 +4,10 @@
 #include <map>
 #include <iostream>
 #include <stdio.h>
-#include "Semantico.h"	
-using namespace std;
+#include "Semantico.h"
 
+using namespace std;
+extern int yylineno;
 class Expr{
 public:
 virtual Tipo* ValidateSemantic() = 0;
@@ -200,7 +201,7 @@ class FuncionExpr: public Expr
 
 class Statement{
  public: 	
-	
+ virtual void ValidateSemantic() = 0;
 };
 
 class AssignStatement : public Statement{
@@ -221,6 +222,7 @@ class AssignStatement : public Statement{
 	class name##Statement : public AssignStatement { \
 	public : \
 		name##Statement(Expr *nombre,Expr *expr1):AssignStatement(nombre,expr1){} \
+		void ValidateSemantic();\
 	}
 
 DEFINE_ASSIGN_Statement(Asignar);
@@ -245,7 +247,7 @@ public:
       	 	this->lista = lista; 
 		this->string = string; 
     	}
-    
+    void ValidateSemantic();
     
 };
 
@@ -258,7 +260,7 @@ public:
 		this->string = string; 
     	}
    
-    
+    void ValidateSemantic();
 };
 class If_Statement : public Statement{
 	public: 
@@ -271,7 +273,7 @@ class If_Statement : public Statement{
 			this->elseStatement = elseStatement;
 		}
 
-		
+		void ValidateSemantic();
 };
 class While_Statement : public Statement{
 	public: 
@@ -283,7 +285,7 @@ class While_Statement : public Statement{
 			this->whileStatement = whileStatement;
 			
 		}
-
+		void ValidateSemantic();
 		
 };
 
@@ -298,7 +300,7 @@ class DoWhile_Statement : public Statement{
 			
 		}
 
-		
+		void ValidateSemantic();
 };
 
 class BlockStatement : public Statement
@@ -309,7 +311,7 @@ class BlockStatement : public Statement
 	 listStatement.push_back(statement);
 	}
 	list<Statement*> listStatement;
-	
+	void ValidateSemantic();
 };
 
 
@@ -325,7 +327,7 @@ class Producer_Statement: public Statement
 			this->producerStatement = producerStatement;
 			
 		}
-
+		void ValidateSemantic();
 		
 };
 
@@ -344,7 +346,7 @@ class For_Statement: public Statement
 			this->ForStatement = ForStatement;
 			
 		}
-
+		void ValidateSemantic();
 		
 };
 
@@ -363,7 +365,7 @@ class DecArrayStatement: public Statement
 			this->inicializar = inicializar;
 			
 		}
-
+		void ValidateSemantic();
 };
 
 class DecApuntadorStatement: public Statement 
@@ -379,7 +381,7 @@ class DecApuntadorStatement: public Statement
 			
 		}
 
-		
+		void ValidateSemantic();
 };
 class DecVariableStatement: public Statement 
 {
@@ -395,7 +397,7 @@ class DecVariableStatement: public Statement
 			this->inicializar = inicializar;
 			
 		}
-
+		void ValidateSemantic();
 		
 };
 class Funcion_Statement: public Statement 
@@ -413,7 +415,7 @@ class Funcion_Statement: public Statement
 			this->funcionStatement = funcionStatement;
 			
 		}
-
+		void ValidateSemantic();
 };
 
 
@@ -426,7 +428,7 @@ class Return_Statement: public Statement
 			this->returnExpr = returnExpr;
 			
 		}
-
+		void ValidateSemantic();
 	
 };
 
@@ -445,7 +447,7 @@ class CallFuncionStatement: public Statement
 			
 		}
 
-		
+		void ValidateSemantic();
 };
 
 class Parametro : public Expr
