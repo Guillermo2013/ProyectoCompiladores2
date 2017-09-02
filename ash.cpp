@@ -220,17 +220,28 @@ void If_Statement :: ValidateSemantic(){
     cout<< "Error : no se puede realizar operaciones con arreglos o con funciones void linea "<< yylineno <<  endl;
     exit(0);
    }
-
+   if(stack->Stack.empty())
+    stack->Stack.push_back(new TablaSimbolos());
+  stack->Stack.push_back(new TablaSimbolos());
+  if(ifStatement != NULL)
   ifStatement->ValidateSemantic();
+   stack->Stack.pop_back();
+    stack->Stack.push_back(new TablaSimbolos());
+  if(elseStatement != NULL)
   elseStatement->ValidateSemantic();
+  stack->Stack.pop_back();
 }
 void While_Statement :: ValidateSemantic(){
   if( expr->ValidateSemantic()->isA(arrayTipo)||  expr->ValidateSemantic()->isA(procedimientoTipo)){
     cout<< "Error : no se puede realizar operaciones con arreglos o con funciones void linea "<< yylineno <<  endl;
     exit(0);
    }
-
+   if(stack->Stack.empty())
+    stack->Stack.push_back(new TablaSimbolos());
+  stack->Stack.push_back(new TablaSimbolos());
+  if(whileStatement != NULL)
   whileStatement->ValidateSemantic();
+   stack->Stack.pop_back();
 }
 
 void DoWhile_Statement :: ValidateSemantic(){
@@ -238,8 +249,12 @@ void DoWhile_Statement :: ValidateSemantic(){
     cout<< "Error : no se puede realizar operaciones con arreglos o con funciones void linea "<< yylineno <<  endl;
     exit(0);
    }
-
+   if(stack->Stack.empty())
+    stack->Stack.push_back(new TablaSimbolos());
+ stack->Stack.push_back(new TablaSimbolos());
+  if(DowhileStatement != NULL)
   DowhileStatement->ValidateSemantic();
+   stack->Stack.pop_back();
 }
 
 void BlockStatement :: ValidateSemantic(){
@@ -258,7 +273,13 @@ void For_Statement :: ValidateSemantic(){
     cout<< "Error : no se puede realizar operaciones con arreglos o con funciones void linea "<< yylineno <<  endl;
     exit(0);
    }
+
+   if(stack->Stack.empty())
+    stack->Stack.push_back(new TablaSimbolos());
+   stack->Stack.push_back(new TablaSimbolos());
+  if(ForStatement != NULL)
   ForStatement->ValidateSemantic();
+   stack->Stack.pop_back();
 }
 
 
@@ -390,8 +411,10 @@ void Funcion_Statement :: ValidateSemantic(){
    else if(strcmp(type,"char*")==0 )
     stack->Stack.back()->DeclareVariable(nombre,new FuncionTipo(new ApuntadorTipo(new CharTipo()),parametrosTipos)); 
 
+stack->Stack.push_back(new TablaSimbolos());
   if(funcionStatement != NULL)
     funcionStatement->ValidateSemantic();
+stack->Stack.pop_back();
 } 
 
 void Producer_Statement :: ValidateSemantic(){
@@ -421,8 +444,11 @@ void Producer_Statement :: ValidateSemantic(){
     }
   }
      stack->Stack.back()->DeclareVariable(nombre,new ProcedimientoTipo(parametrosTipos));
+  
+   stack->Stack.push_back(new TablaSimbolos());
    if(producerStatement != NULL)
     producerStatement->ValidateSemantic();
+  stack->Stack.pop_back();
 }
 
 Tipo* FuncionExpr :: ValidateSemantic(){
