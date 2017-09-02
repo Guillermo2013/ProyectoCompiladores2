@@ -1,5 +1,10 @@
 
 
+int test(int a,int b);
 
 
-b = 1<1 ? 1 : 's';
+int z[3] ;
+int c = test(2,1);
+
+test(2,z);
+

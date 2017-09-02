@@ -13,7 +13,8 @@ Tipo* TablaSimbolos::GetVariable(char* name){
 	    if(strcmp(p->first,name) == 0){
 	      return p->second; 
 	  	   
-	   } 
+	   }
+	   p ++; 
 	}
 }
 bool TablaSimbolos::VariableExist(char* name){

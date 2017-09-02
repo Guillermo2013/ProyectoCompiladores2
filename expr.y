@@ -3,7 +3,7 @@
 }
 %{
 #include <stdio.h>
-
+#include <string.h>
 
 #define SZ 32
 int yylex();
@@ -11,6 +11,7 @@ extern char* yytext;
 extern int yylineno;
 extern char *yyfilename;
 void yyerror(const char *msg){
+
 printf("Error : String(%s) Line %d : %s  file: %s   \n",yytext,yylineno,msg,yyfilename);
 }
 
@@ -41,7 +42,7 @@ printf("Error : String(%s) Line %d : %s  file: %s   \n",yytext,yylineno,msg,yyfi
 
 %type <int_t> TK_NUMERO 
 %type <expr_t> expr term factor add conditional corrimiento exprForBit unary andOr ternario assignExpr opAssign optionalAssign parametroList 
-%type <expr_t> optparametroList
+%type <expr_t> optparametroList optionalExpr
 %type <parametro_t>  parametro
 %type <string_t> TK_VarNombre TK_String Type
 %type <char_t> TK_CharLit
@@ -53,7 +54,7 @@ printf("Error : String(%s) Line %d : %s  file: %s   \n",yytext,yylineno,msg,yyfi
 
 %%
 
-inputs :opt_eols statementList opt_eols
+inputs :opt_eols statementList opt_eols {$2->ValidateSemantic();}
        |opt_eols 
 ;
 
@@ -86,9 +87,9 @@ declaration_statement: Type TK_VarNombre TK_left_corchete  expr TK_rigth_corchet
 		      
 ; 
 funcion_statement:Type TK_VarNombre TK_left_par optparametroList TK_rigth_par opt_eols optionalBlock {$$ = new Funcion_Statement($1,$2,$4,$7);}
-		 |Type TK_Op_mul TK_VarNombre TK_left_par optparametroList TK_rigth_par opt_eols optionalBlock {
-		  $$ = new Funcion_Statement($1,$3,$5,$8);}	
-		 
+		 |Type TK_Op_mul TK_VarNombre TK_left_par optparametroList TK_rigth_par opt_eols optionalBlock {if($1 == "int")
+		  $$ = new Funcion_Statement("int*",$3,$5,$8);else $$ = new Funcion_Statement("char*",$3,$5,$8);}	
+		  
 ;
 
 producce_statement : TK_Void TK_VarNombre TK_left_par optparametroList TK_rigth_par opt_eols optionalBlock {
@@ -102,10 +103,16 @@ parametroList:parametroList TK_Comma parametro {$$ = $1; ((Parametros*)$$)->addP
 	     |parametro { $$ = new Parametros();((Parametros*)$$)->addParametro($1);}
 ;
 
-parametro: Type TK_VarNombre { $$ = new Parametro($1,new VarNombreExpr($2));}
-	 | Type TK_Op_mul TK_VarNombre { $$ = new Parametro($1,new DesferenciaExpr(new VarNombreExpr($3)));}
-	 | Type TK_VarNombre TK_left_corchete expr TK_rigth_corchete  { $$ = new Parametro($1,new VarNombreArrayExpr($2,$4));}
+parametro: Type TK_VarNombre { $$ = new Parametro($1,new DecVariableStatement($1,$2,NULL));}
+	 | Type TK_Op_mul TK_VarNombre { const char * tipo = $1 == "int"? "int*":"char*"; 
+	   $$ = new Parametro(tipo, new DecApuntadorStatement($1,$3,NULL)); }
+	 | Type TK_VarNombre TK_left_corchete optionalExpr TK_rigth_corchete  { const char * tipo = $1 == "int"? "int[]":"char[]";
+           $$ = new Parametro(tipo,new DecArrayStatement($1,$2,$4,NULL)); }
 ;
+optionalExpr:expr {$$ = $1;}
+	     | {$$ = new NumberExpr(0);}
+;
+
 optionalBlock:BlockStatementFuncion {$$ = $1;}
 	     |TK_PuntoComma {$$ = NULL;}
 ;
@@ -134,12 +141,12 @@ return_statement :TK_Return expr {$$ = new Return_Statement($2);}
 ;
 optionalAssign :TK_Asignacion expr %dprec 1 {$$ = $2;}
 		|TK_Asignacion TK_String %dprec 3 { $$ = new StringExpr($2);}
-		|TK_Asignacion TK_left_llave arg_list TK_rigth_llave %dprec 4 {$$ = new ArrayExpr($3);}		
-		| %dprec 2 {$$ = NULL;}
+		|TK_Asignacion TK_left_llave arg_list TK_rigth_llave %dprec 2 {$$ = new ArrayExpr($3);}		
+		| %dprec 4 {$$ = NULL;}
 ;
 
-Type: TK_Int {char *text = "int"; $$ = text; }
-     |TK_Char  { char *text = "char"; $$ = text; }
+Type: TK_Int { $$ = "int"; }
+     |TK_Char  {  $$ =  "char"; }
 ;
 for_statement: TK_For TK_left_par opt_eols for_assign opt_eols TK_PuntoComma opt_eols expr opt_eols TK_PuntoComma opt_eols expr opt_eols TK_rigth_par opt_eols BlockStatementOrStatement { $$ = new For_Statement($4,$8,$12,$16);};
 ;

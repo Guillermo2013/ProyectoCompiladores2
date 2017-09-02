@@ -1,5 +1,7 @@
+
 #ifndef _SEMANTICO_H
 #define _SEMANTICO_H
+
 #include <map>
 #include <list>
 #include <stdio.h>
@@ -77,8 +79,8 @@ class FuncionTipo : public Tipo
 {
 public:
     Tipo * retorno;
-    map< char *, Tipo* > *parametros;
-	FuncionTipo( Tipo * retorno, map< char *, Tipo *> *parametros){
+    list<Tipo *> *parametros;
+	FuncionTipo( Tipo * retorno, list<Tipo *> *parametros){
 		this->retorno = retorno;
 		this->parametros = parametros;
 	};
@@ -88,8 +90,8 @@ public:
 class ProcedimientoTipo : public Tipo
 {
 public:
-    map< char *, Tipo *> *parametros;
-	ProcedimientoTipo( map< char *, Tipo *> *parametros){
+    list<Tipo *> *parametros;
+	ProcedimientoTipo( list<Tipo *> *parametros){
 		this->parametros = parametros;
 	};
 	~ProcedimientoTipo();
@@ -115,4 +117,5 @@ public:
 	~StackContenido(){};
 	
 };
-#endif
+
+#endif 

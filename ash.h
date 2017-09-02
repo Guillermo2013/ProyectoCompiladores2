@@ -115,7 +115,7 @@ class TernarioExpr:public Expr{
 		this->condicion = condicion;
 		this->expr1 = expr1;
 		this->expr2 = expr2;
-		ValidateSemantic();
+	
 	}	
 	Expr* condicion;
 	Expr *expr1;	
@@ -428,7 +428,7 @@ class Return_Statement: public Statement
 			this->returnExpr = returnExpr;
 			
 		}
-		void ValidateSemantic();
+		void ValidateSemantic(){};
 	
 };
 
@@ -455,16 +455,16 @@ class Parametro : public Expr
  public: 
 		
 		
-		char  * type;		
-		Expr * declaracion;
+		const char  * type;		
+		Statement * declaracion;
 		
-		Parametro(char  * type,Expr *declaracion){
+		Parametro(const char  * type,Statement *declaracion){
 			this->type = type;
 			this->declaracion = declaracion;
 			
 		}
 
-		Tipo* ValidateSemantic(){return new IntTipo();}
+		Tipo* ValidateSemantic();
 };
 
 class Parametros : public Expr
@@ -475,6 +475,6 @@ class Parametros : public Expr
 	 listParametro.push_back(parametro);
 	}
 		list<Parametro*> listParametro;
-	Tipo* ValidateSemantic(){return new IntTipo();}
+	Tipo* ValidateSemantic(){return new IntTipo();};
 };
 #endif 
