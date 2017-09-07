@@ -261,6 +261,7 @@ void BlockStatement :: ValidateSemantic(){
   list<Statement*>::iterator it = listStatement.begin();
     while (it != listStatement.end()) {
       Statement * st = *it;
+      if(*it != NULL)
        st->ValidateSemantic();
        it++;
     }

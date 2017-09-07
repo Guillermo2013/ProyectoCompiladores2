@@ -1,11 +1,5 @@
-
-
-
-
-int z[3] ;
-
-if(1)	
-  int w;
-
-int w;
- 
+int test(){
+int v,e;
+	printf(" " , v);
+	printf(" " , e);
+	}

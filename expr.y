@@ -21,7 +21,7 @@ printf("Error : String(%s) Line %d : %s  file: %s   \n",yytext,yylineno,msg,yyfi
 #define YYDEBUG 1
 %}
 %glr-parser
-%expect 74
+
 
 %union {
   Statement *statement_t;
@@ -40,7 +40,7 @@ printf("Error : String(%s) Line %d : %s  file: %s   \n",yytext,yylineno,msg,yyfi
 %token TK_AsigOrBit TK_AsigCorIzq TK_AsigCorDer TK_Incremento TK_Decremento TK_CorrimientoIzq TK_CorrimientoDer TK_ExclPorBit TK_And TK_Or
 %token TK_OPorBit TK_Interogaccion TK_Negarcion TK_Complemento TK_DosPuntos TK_AsigAndBit TK_AsigXorBit TK_AutoMod TK_Do TK_Return
 
-%type <int_t> TK_NUMERO 
+%type <int_t> TK_NUMERO
 %type <expr_t> expr term factor add conditional corrimiento exprForBit unary andOr ternario assignExpr opAssign optionalAssign parametroList 
 %type <expr_t> optparametroList optionalExpr
 %type <parametro_t>  parametro
@@ -49,43 +49,60 @@ printf("Error : String(%s) Line %d : %s  file: %s   \n",yytext,yylineno,msg,yyfi
 %type <statement_t> statement assign_statement print_statement if_statement statementList while_statement scanf_statement 
 %type <statement_t>  producce_statement BlockStatementOrStatement for_statement for_assign opAssignStatement  
 %type <statement_t> doWhile_statement declaration_statement funcion_statement callFuncion_statement optionalBlock
-%type <statement_t> statementListFuncion statementFuncion BlockStatementFuncion return_statement
+%type <statement_t> statementListFuncion statementFuncion BlockStatementFuncion return_statement declarationList
+%type <statement_t> inputStatementFuncion inputStatement multiDeclaration uniMultideclaration
 %type <exprlist_t> arg_list optionalParameter
 
 %%
 
-inputs :opt_eols statementList opt_eols {$2->ValidateSemantic();}
-       |opt_eols 
+inputs :opt_eols  inputStatement opt_eols {$2->ValidateSemantic();}  
 ;
 
-statementList:statementList  opt_eols statement  {$$ = $1; ((BlockStatement*)$$)->addStatement($3);}
-	     |statement { $$ = new BlockStatement(); ((BlockStatement*)$$)->addStatement($1);}
-	     
+statementList:statementList  opt_eols statement %dprec 2 {$$ = $1; ((BlockStatement*)$$)->addStatement($3);}
+	     |statement %dprec 1 { $$ = new BlockStatement(); ((BlockStatement*)$$)->addStatement($1);}
 ;
-statement : if_statement {$$ = $1;}
-	  | while_statement {$$ = $1;}
-	  | print_statement TK_PuntoComma {$$ = $1;}
-	  | scanf_statement TK_PuntoComma	
-          | assign_statement TK_PuntoComma {$$ = $1;}
-	  | producce_statement {$$ = $1;}
-	  | for_statement {$$ = $1;}
-	  | doWhile_statement TK_PuntoComma {$$ = $1;}
-	  | declaration_statement TK_PuntoComma {$$ = $1;}
-	  | funcion_statement {$$ =$1;}
-	  | callFuncion_statement TK_PuntoComma{$$ = $1;}
+declarationList:declarationList  opt_eols declaration_statement TK_PuntoComma %dprec 2	 {$$ = $1; ((BlockStatement*)$$)->addStatement($3);}
+	     |declaration_statement TK_PuntoComma %dprec 1 { $$ = new BlockStatement(); ((BlockStatement*)$$)->addStatement($1);}
+;
+
+inputStatement: declarationList opt_eols statementList %dprec 2 {$$ = $1; ((BlockStatement*)$$)->addStatement($3);}
+		| statementList %dprec 1 {$$ = $1;}
+;
+
+statement : if_statement %dprec 1 {$$ = $1;}
+	  | while_statement %dprec 2 {$$ = $1;}
+	  | print_statement TK_PuntoComma %dprec 3 {$$ = $1;}
+	  | scanf_statement TK_PuntoComma %dprec 4 {$$ = $1;}	
+          | assign_statement TK_PuntoComma %dprec 5 {$$ = $1;}
+	  | producce_statement %dprec 6 {$$ = $1;}
+	  | for_statement %dprec 7 {$$ = $1;}
+	  | doWhile_statement TK_PuntoComma %dprec 8 {$$ = $1;}
+	  | funcion_statement %dprec 9{$$ =$1;}
+	  | callFuncion_statement TK_PuntoComma %dprec 10{$$ = $1;}
 ;
 
 
 callFuncion_statement : TK_VarNombre TK_left_par optionalParameter TK_rigth_par {$$ = new CallFuncionStatement($1,$3);}
 ;
-optionalParameter:arg_list {$$ = $1;}
-		| {$$ = NULL;}
+optionalParameter:arg_list %dprec 2 {$$ = $1;}
+		| %dprec 1 {$$ = NULL;}
 ;
-declaration_statement: Type TK_VarNombre TK_left_corchete  expr TK_rigth_corchete optionalAssign {$$ = new DecArrayStatement($1,$2,$4,$6);}	
-	              |Type TK_Op_mul TK_VarNombre optionalAssign {$$ = new DecApuntadorStatement($1,$3,$4);}
- 		      |Type TK_VarNombre optionalAssign {$$ = new DecVariableStatement($1,$2,$3);}
+declaration_statement: Type TK_VarNombre TK_left_corchete  expr TK_rigth_corchete optionalAssign multiDeclaration {
+			$$ = new DecArrayStatement($1,$2,$4,$6);}	
+	              |Type TK_Op_mul TK_VarNombre optionalAssign multiDeclaration {$$ = new DecApuntadorStatement($1,$3,$4);}
+ 		      |Type TK_VarNombre optionalAssign multiDeclaration {$$ = new DecVariableStatement($1,$2,$3);}
 		      
 ; 
+
+multiDeclaration:TK_Comma uniMultideclaration TK_Comma uniMultideclaration %dprec 1 {$$ = NULL;}
+		| TK_Comma uniMultideclaration %dprec 2 {$$ = NULL;}
+
+;
+uniMultideclaration  :TK_VarNombre TK_left_corchete  expr TK_rigth_corchete optionalAssign {$$ = new DecArrayStatement(NULL,$1,$3,$5);}	
+	             | TK_Op_mul TK_VarNombre optionalAssign {$$ = new DecApuntadorStatement(NULL,$2,$3);}
+ 		     | TK_VarNombre optionalAssign {$$ = new DecVariableStatement(NULL,$1,$2);}
+ 
+;
 funcion_statement:Type TK_VarNombre TK_left_par optparametroList TK_rigth_par opt_eols optionalBlock {$$ = new Funcion_Statement($1,$2,$4,$7);}
 		 |Type TK_Op_mul TK_VarNombre TK_left_par optparametroList TK_rigth_par opt_eols optionalBlock {if($1 == "int")
 		  $$ = new Funcion_Statement("int*",$3,$5,$8);else $$ = new Funcion_Statement("char*",$3,$5,$8);}	
@@ -96,11 +113,11 @@ producce_statement : TK_Void TK_VarNombre TK_left_par optparametroList TK_rigth_
 			$$ = new Producer_Statement($2,$4,$7);}
 ;
 
-optparametroList : parametroList { $$ = $1;}
-		 | {$$ = NULL;}
+optparametroList : parametroList %dprec 2 { $$ = $1;}
+		 | %dprec 1 {$$ = NULL;}
 ;
-parametroList:parametroList TK_Comma parametro {$$ = $1; ((Parametros*)$$)->addParametro($3);}
-	     |parametro { $$ = new Parametros();((Parametros*)$$)->addParametro($1);}
+parametroList:parametroList TK_Comma parametro %dprec 2 {$$ = $1; ((Parametros*)$$)->addParametro($3);}
+	     |parametro %dprec 1 { $$ = new Parametros();((Parametros*)$$)->addParametro($1);}
 ;
 
 parametro: Type TK_VarNombre { $$ = new Parametro($1,new DecVariableStatement($1,$2,NULL));}
@@ -109,30 +126,34 @@ parametro: Type TK_VarNombre { $$ = new Parametro($1,new DecVariableStatement($1
 	 | Type TK_VarNombre TK_left_corchete optionalExpr TK_rigth_corchete  { const char * tipo = $1 == "int"? "int[]":"char[]";
            $$ = new Parametro(tipo,new DecArrayStatement($1,$2,$4,NULL)); }
 ;
-optionalExpr:expr {$$ = $1;}
-	     | {$$ = new NumberExpr(0);}
+optionalExpr:expr %dprec 2 {$$ = $1;}
+	     | %dprec 1 {$$ = new NumberExpr(0);}
 ;
 
-optionalBlock:BlockStatementFuncion {$$ = $1;}
-	     |TK_PuntoComma {$$ = NULL;}
+optionalBlock:BlockStatementFuncion %dprec 2 {$$ = $1;}
+	     |TK_PuntoComma %dprec 1 {$$ = NULL;}
 ;
-BlockStatementFuncion : TK_left_llave opt_eols statementListFuncion opt_eols TK_rigth_llave  { $$ = $3;}
+BlockStatementFuncion : TK_left_llave opt_eols inputStatementFuncion opt_eols TK_rigth_llave  { $$ = $3;}
 ;
 
-statementListFuncion:statementListFuncion  opt_eols statementFuncion  {$$ = $1; ((BlockStatement*)$$)->addStatement($3);}	    
-			 |statementFuncion { $$ = new BlockStatement(); ((BlockStatement*)$$)->addStatement($1);}
+inputStatementFuncion :declarationList 	opt_eols statementListFuncion %dprec 2 {$$ = $1; ((BlockStatement*)$$)->addStatement($3);}
+		      |statementListFuncion %dprec 1 {$$ = $1;}
+		      
+;
+statementListFuncion:statementListFuncion  opt_eols statementFuncion %dprec 2 {$$ = $1; ((BlockStatement*)$$)->addStatement($3);}	    
+	            |statementFuncion %dprec 1{ $$ = new BlockStatement(); ((BlockStatement*)$$)->addStatement($1);}
 ;
 
 statementFuncion : if_statement {$$ = $1;}
 	  | while_statement {$$ = $1;}
 	  | print_statement TK_PuntoComma {$$ = $1;}
-	  | scanf_statement TK_PuntoComma	
+	  | scanf_statement TK_PuntoComma {$$ = $1;}	 
           | assign_statement TK_PuntoComma {$$ = $1;}
 	  | for_statement {$$ = $1;}
 	  | doWhile_statement TK_PuntoComma {$$ = $1;}
-	  | declaration_statement TK_PuntoComma {$$ = $1;}
 	  | callFuncion_statement TK_PuntoComma{$$ = $1;}
 	  | return_statement TK_PuntoComma {$$ = $1;}
+	  
 ;
 
 
@@ -165,37 +186,38 @@ while_statement : TK_While TK_left_par expr TK_rigth_par opt_eols BlockStatement
 doWhile_statement  : TK_Do opt_eols BlockStatementOrStatement opt_eols TK_While TK_left_par expr TK_rigth_par  {$$ = new DoWhile_Statement($7,$3);}
 ;
 
-BlockStatementOrStatement: statement { $$ = new BlockStatement(); ((BlockStatement*)$$)->addStatement($1);}
-			 |  TK_left_llave opt_eols statementList opt_eols TK_rigth_llave  { $$ = $3;}	
+BlockStatementOrStatement: statement %dprec 1 { $$ = new BlockStatement(); ((BlockStatement*)$$)->addStatement($1);}
+			 |  TK_left_llave opt_eols statementList opt_eols TK_rigth_llave %dprec 2 { $$ = $3;}	
 ;
  
 
-	
-print_statement : TK_Print TK_left_par TK_String TK_Comma arg_list TK_rigth_par { $$ = new PrintStatement($3,$5);}
-		|TK_Print TK_left_par TK_String TK_rigth_par { $$ = new PrintStatement($3,NULL);}
+	 
+print_statement : TK_Print TK_left_par TK_String TK_Comma arg_list TK_rigth_par %dprec 2 { $$ = new PrintStatement($3,$5);}
+		|TK_Print TK_left_par TK_String TK_rigth_par %dprec 1 { $$ = new PrintStatement($3,NULL);}
 		
 ;
 
-scanf_statement :TK_Scanf TK_left_par TK_String TK_Comma arg_list TK_rigth_par { $$ = new ScanfStatement($3,$5);}
-		|TK_Scanf TK_left_par TK_String TK_rigth_par { $$ = new ScanfStatement($3,NULL);}		
+scanf_statement :TK_Scanf TK_left_par TK_String TK_Comma arg_list TK_rigth_par %dprec 1 { $$ = new ScanfStatement($3,$5);}
+		|TK_Scanf TK_left_par TK_String TK_rigth_par %dprec 1 { $$ = new ScanfStatement($3,NULL);}		
 ;
 
 
-arg_list: arg_list TK_Comma expr { $$ = $1;$$->push_back($3); }
-	| expr { $$ = new ExprList; $$->push_back($1); }
+arg_list: arg_list TK_Comma expr %dprec 2 { $$ = $1;$$->push_back($3); }
+	| expr %dprec 2 { $$ = new ExprList; $$->push_back($1); }
 ;
 
 
 
-assign_statement : TK_VarNombre opAssignStatement expr { $$ = $2; ((AssignStatement*)$$)->nombre = new VarNombreExpr($1);
+assign_statement : TK_VarNombre  opAssignStatement expr { $$ = $2; ((AssignStatement*)$$)->nombre = new VarNombreExpr($1);
 		 ((AssignStatement*)$$)->expr1 = $3;}
-		 | TK_VarNombre TK_left_corchete  expr TK_rigth_corchete  opAssignStatement expr{ 
+		 | TK_VarNombre TK_left_corchete  expr TK_rigth_corchete opAssignStatement expr{ 
                  $$ = $5;((AssignStatement*)$$)->nombre = new VarNombreArrayExpr($1,$3); ((AssignStatement*)$$)->expr1 = $6; }
 		 | TK_Refenciacion TK_VarNombre opAssignStatement expr  { 
 	    	 $$ = $3; ((AssignStatement*)$$)->nombre = new ReferenciaExpr(new VarNombreExpr($2)); ((AssignStatement*)$$)->expr1 = $4; }
 		 | TK_Op_mul TK_VarNombre opAssignStatement expr  { 
 	    	 $$ = $3; ((AssignStatement*)$$)->nombre = new DesferenciaExpr(new VarNombreExpr($2)); ((AssignStatement*)$$)->expr1 = $4; }
 ;
+
 	
 opAssignStatement : TK_Asignacion {$$ = new AsignarStatement(NULL,NULL);}
 	 | TK_AutoAdd {$$ = new MasIgualStatement(NULL,NULL); }
@@ -217,8 +239,8 @@ opt_eols:opt_eols TK_EOL
 	|
 ;
 
-ternario:conditional TK_Interogaccion expr TK_DosPuntos expr { $$ = new TernarioExpr($1,$3,$5); }
-        |andOr  {$$ = $1;}
+ternario:conditional TK_Interogaccion expr TK_DosPuntos expr %dprec 2 { $$ = new TernarioExpr($1,$3,$5); }
+        |andOr  %dprec 1 {$$ = $1;}
 ;
 
 
@@ -243,8 +265,8 @@ opAssign : TK_Asignacion {$$ = new AsignarExpr(NULL,NULL);}
 	 | TK_AsigCorDer {$$ = new AsigCorDerIgualExpr(NULL,NULL);}
 ;
 
-expr : assignExpr  {$$ = $1;}
-	|ternario  {$$ = $1;}
+expr : assignExpr  %dprec 1 {$$ = $1;}
+	|ternario  %dprec 2 {$$ = $1;}
 ;
 
 andOr:andOr TK_And exprForBit %dprec 2 { $$ = new AndExpr($1,$3); }
@@ -256,44 +278,44 @@ exprForBit : exprForBit TK_OPorBit conditional %dprec 2 {$$ = new OPorBitExpr($1
 	    | exprForBit TK_Refenciacion conditional %dprec 4 {$$ = new YPorBitExpr($1,$3);}
 	    | conditional %dprec 1 { $$ = $1;}
 ;
-conditional: conditional TK_Igual corrimiento  {$$ = new IgualExpr($1,$3);}
-	     |conditional TK_Distinto corrimiento  {$$ = new DistintoExpr($1,$3);}
-	     |conditional TK_Menor corrimiento  {$$ = new MenorExpr($1,$3);}
-	     |conditional TK_Mayor corrimiento  {$$ = new MayorExpr($1,$3);}
-	     |conditional TK_MenorIgual corrimiento  {$$ = new MenorIgualExpr($1,$3);}
-	     |conditional TK_MayorIgual corrimiento  {$$ = new MayorIgualExpr($1,$3);}
-	     |corrimiento  {$$ = $1;}
+conditional: conditional TK_Igual corrimiento %dprec 1 {$$ = new IgualExpr($1,$3);}
+	     |conditional TK_Distinto corrimiento %dprec 2 {$$ = new DistintoExpr($1,$3);}
+	     |conditional TK_Menor corrimiento %dprec 3 {$$ = new MenorExpr($1,$3);}
+	     |conditional TK_Mayor corrimiento %dprec 4 {$$ = new MayorExpr($1,$3);}
+	     |conditional TK_MenorIgual corrimiento %dprec 5 {$$ = new MenorIgualExpr($1,$3);}
+	     |conditional TK_MayorIgual corrimiento %dprec 6 {$$ = new MayorIgualExpr($1,$3);}
+	     |corrimiento  %dprec 7{$$ = $1;}
 ;
-corrimiento: corrimiento TK_CorrimientoIzq add {$$ = new CorrimientoIzqExpr($1,$3);}
-	    |corrimiento TK_CorrimientoDer add {$$ = new CorrimientoDerExpr($1,$3);}
-            |add {$$ = $1;}
+corrimiento: corrimiento TK_CorrimientoIzq add %dprec 1 {$$ = new CorrimientoIzqExpr($1,$3);}
+	    |corrimiento TK_CorrimientoDer add %dprec 2 {$$ = new CorrimientoDerExpr($1,$3);}
+            |add %dprec 3 {$$ = $1;}
 ;
-add :  add TK_Op_add term { $$ = new AddExpr($1,$3);}
-      | add TK_Op_sub term { $$ = new SubExpr($1,$3);}
-      | term { $$ = $1;}
-;
-
-term :  term TK_Op_mul unary { $$ = new MultExpr($1,$3);}
-      | term TK_Op_div unary { $$ = new DivExpr($1,$3);}
-      | term TK_Modulo unary { $$ = new ModExpr($1,$3);}
-      | unary { $$ = $1;}
+add :  add TK_Op_add term %dprec 1 { $$ = new AddExpr($1,$3);}
+      | add TK_Op_sub term %dprec 2 { $$ = new SubExpr($1,$3);}
+      | term %dprec 3 { $$ = $1;}
 ;
 
-unary : TK_Negarcion expr {$$ = new NegacionExpr($2);}
-      | TK_Complemento expr {$$ = new ComplementoExpr($2);}
-      | TK_Op_mul TK_VarNombre {$$ = new DesferenciaExpr(new VarNombreExpr($2));}
-      | TK_Op_mul TK_left_par TK_VarNombre TK_rigth_par {$$ = new DesferenciaExpr(new VarNombreExpr($3));}
-      | TK_Refenciacion TK_VarNombre {$$ = new ReferenciaExpr(new VarNombreExpr($2));}
-      | TK_Refenciacion TK_left_par TK_VarNombre TK_rigth_par {$$ = new ReferenciaExpr(new VarNombreExpr($3));}
-      | TK_Incremento TK_VarNombre {$$ = new PreIncrementoExpr(new VarNombreExpr($2));}
-      | TK_Incremento TK_left_par TK_VarNombre TK_rigth_par {$$ = new PreIncrementoExpr(new VarNombreExpr($3));}
-      | TK_Decremento TK_VarNombre {$$ = new PreDecrementoExpr(new VarNombreExpr($2));}
-      | TK_Decremento TK_left_par TK_VarNombre TK_rigth_par {$$ = new PreDecrementoExpr(new VarNombreExpr($3));}
-      | TK_VarNombre TK_Incremento {$$ = new PosIncrementoExpr(new VarNombreExpr($1));}
-      | TK_left_par TK_VarNombre TK_rigth_par TK_Incremento {$$ = new PosIncrementoExpr(new VarNombreExpr($2));}
-      | TK_VarNombre TK_Decremento {$$ = new PosDecrementoExpr(new VarNombreExpr($1));}
-      | TK_left_par TK_VarNombre TK_rigth_par TK_Decremento {$$ = new PosDecrementoExpr(new VarNombreExpr($2));}
-      | factor {$$ = $1;}
+term :  term TK_Op_mul unary %dprec 1 { $$ = new MultExpr($1,$3);}
+      | term TK_Op_div unary %dprec 2 { $$ = new DivExpr($1,$3);}
+      | term TK_Modulo unary %dprec 3 { $$ = new ModExpr($1,$3);}
+      | unary %dprec 4 { $$ = $1;}
+;
+
+unary : TK_Negarcion expr %dprec 1 {$$ = new NegacionExpr($2);}
+      | TK_Complemento expr %dprec 2 {$$ = new ComplementoExpr($2);}
+      | TK_Op_mul TK_VarNombre %dprec 3 {$$ = new DesferenciaExpr(new VarNombreExpr($2));}
+      | TK_Op_mul TK_left_par TK_VarNombre TK_rigth_par %dprec 4 {$$ = new DesferenciaExpr(new VarNombreExpr($3));}
+      | TK_Refenciacion TK_VarNombre %dprec 5 {$$ = new ReferenciaExpr(new VarNombreExpr($2));}
+      | TK_Refenciacion TK_left_par TK_VarNombre TK_rigth_par %dprec 6 {$$ = new ReferenciaExpr(new VarNombreExpr($3));}
+      | TK_Incremento TK_VarNombre %dprec 7 {$$ = new PreIncrementoExpr(new VarNombreExpr($2));}
+      | TK_Incremento TK_left_par TK_VarNombre TK_rigth_par %dprec 8 {$$ = new PreIncrementoExpr(new VarNombreExpr($3));}
+      | TK_Decremento TK_VarNombre %dprec 9 {$$ = new PreDecrementoExpr(new VarNombreExpr($2));}
+      | TK_Decremento TK_left_par TK_VarNombre TK_rigth_par %dprec 10 {$$ = new PreDecrementoExpr(new VarNombreExpr($3));}
+      | TK_VarNombre TK_Incremento %dprec 11 {$$ = new PosIncrementoExpr(new VarNombreExpr($1));}
+      | TK_left_par TK_VarNombre TK_rigth_par TK_Incremento %dprec 12 {$$ = new PosIncrementoExpr(new VarNombreExpr($2));}
+      | TK_VarNombre TK_Decremento %dprec 13 {$$ = new PosDecrementoExpr(new VarNombreExpr($1));}
+      | TK_left_par TK_VarNombre TK_rigth_par TK_Decremento %dprec 14 {$$ = new PosDecrementoExpr(new VarNombreExpr($2));}
+      | factor %dprec 15{$$ = $1;}
 
 ;
 	
