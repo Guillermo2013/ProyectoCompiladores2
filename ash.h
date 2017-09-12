@@ -8,9 +8,74 @@
 
 using namespace std;
 extern int yylineno;
+
+
+class CodigoGenerado
+{
+  public:
+	string codigo;
+	string temporal;
+	CodigoGenerado(){};
+	~CodigoGenerado(){};
+};
+
+enum ExprKind {
+  LT_EXPR,
+  LTE_EXPR,
+  GT_EXPR,
+  GTE_EXPR,
+  NE_EXPR,
+  EQ_EXPR,
+  ADD_EXPR,
+  SUB_EXPR,
+  MULT_EXPR,
+  DIV_EXPR,
+  MOD_EXPR,
+  AND_EXPR,
+  OR_EXPR,
+  CORIZQ_EXPR,
+  CORIDER_EXP,
+  ExclXBIT_EXPR,
+  YXBit_EXPR,
+  OXBIT_EXPR,
+  POSINC_EXPR,
+  POSDEC_EXPR,
+  PREINC_EXPR,
+  PREDEC_EXPR,
+  DESFE_EXPR,
+  REFE_EXPR,
+  ASIG_EXPR,
+  MASIGULA_EXPR,
+  MENOSIGUAL_EXPR,
+  MULTIGUAL_EXPR.
+  DIVIGUAL_EXPR,
+  MODIGUAL_EXPR,
+  ORBITIGUAL_EXPR,
+  XORIGUAL_EXPR,
+  ANDIGUAL_EXPR,
+  CORIIZIGUAL_EXPR,
+  CORIDERIGUAL_EXPR,
+  NEGACION_EXPR,
+  COMPE_EXPR,
+  TERNARIO_EXPR,
+  EXPT_EXPR,
+  NUM_EXPR,
+  ID_EXPR,
+  STRING_EXPR,
+  ARRAY_EXPR,
+  ARRAYNOMBRE_EXPR,
+  CHAR_EXPR,
+  INPUT_EXPR,
+  CALL_EXPR
+};
+
 class Expr{
 public:
 virtual Tipo* ValidateSemantic() = 0;
+virtual Tipo* generalCodigo(CodigoGenerado * codigo) = 0;
+virtual int getKind() = 0;
+bool isA(int kind) { return (getKind() == kind); }
+
 };
 
 typedef list<Expr*> ExprList;
@@ -47,67 +112,73 @@ class AssignExpr:public Expr{
  	
 };
 
-#define DEFINE_BINARY_EXPR(name) \
+#define DEFINE_BINARY_EXPR(name,tipo) \
 	class name##Expr : public BinaryExpr { \
 	public : \
 		name##Expr(Expr *expr1,Expr *expr2):BinaryExpr(expr1,expr2){\
 		} \
 		Tipo* ValidateSemantic();\
+		int getKind() { return tipo; }\
+		void generalCodigo(CodigoGenerado * codigo);\
 	}
 
-DEFINE_BINARY_EXPR(Add);
-DEFINE_BINARY_EXPR(Sub);
-DEFINE_BINARY_EXPR(Mult);
-DEFINE_BINARY_EXPR(Div);
-DEFINE_BINARY_EXPR(Igual);
-DEFINE_BINARY_EXPR(Distinto);
-DEFINE_BINARY_EXPR(Mayor);
-DEFINE_BINARY_EXPR(Menor);
-DEFINE_BINARY_EXPR(MayorIgual);
-DEFINE_BINARY_EXPR(MenorIgual);
-DEFINE_BINARY_EXPR(Or);
-DEFINE_BINARY_EXPR(And);
-DEFINE_BINARY_EXPR(Mod);
-DEFINE_BINARY_EXPR(CorrimientoIzq);
-DEFINE_BINARY_EXPR(CorrimientoDer);
-DEFINE_BINARY_EXPR(OPorBit);
-DEFINE_BINARY_EXPR(ExclPorBit);
-DEFINE_BINARY_EXPR(YPorBit);
+DEFINE_BINARY_EXPR(Add,ADD_EXPR);
+DEFINE_BINARY_EXPR(Sub,SUB_EXPR);
+DEFINE_BINARY_EXPR(Mult,SUB_EXPR);
+DEFINE_BINARY_EXPR(Div,DIV_EXPR);
+DEFINE_BINARY_EXPR(Igual,EQ_EXPR);
+DEFINE_BINARY_EXPR(Distinto,NE_EXPR);
+DEFINE_BINARY_EXPR(Mayor,GT_EXPR);
+DEFINE_BINARY_EXPR(Menor,LT_EXPR);
+DEFINE_BINARY_EXPR(MayorIgual,GTE_EXPR);
+DEFINE_BINARY_EXPR(MenorIgual,LTE_EXPR);
+DEFINE_BINARY_EXPR(Or,OR_EXPR);
+DEFINE_BINARY_EXPR(And,AND_EXPR);
+DEFINE_BINARY_EXPR(Mod,MOD_EXPR);
+DEFINE_BINARY_EXPR(CorrimientoIzq,CORIZQ_EXPR);
+DEFINE_BINARY_EXPR(CorrimientoDer,CORIDER_EXP);
+DEFINE_BINARY_EXPR(OPorBit,OXBIT_EXPR);
+DEFINE_BINARY_EXPR(ExclPorBit,ExclXBIT_EXPR);
+DEFINE_BINARY_EXPR(YPorBit,YXBit_EXPR);
 
-#define DEFINE_UNARY_EXPR(name) \
+#define DEFINE_UNARY_EXPR(name,tipo) \
 	class name##Expr : public UnaryExpr { \
 	public : \
 		name##Expr(Expr *expr1):UnaryExpr(expr1){} \
 		Tipo* ValidateSemantic();\
+		int getKind() { return tipo; }\
+		void generalCodigo(CodigoGenerado * codigo);\
 }
 
-DEFINE_UNARY_EXPR(Desferencia);
-DEFINE_UNARY_EXPR(PreIncremento);
-DEFINE_UNARY_EXPR(PreDecremento);
-DEFINE_UNARY_EXPR(PosIncremento);
-DEFINE_UNARY_EXPR(PosDecremento);
-DEFINE_UNARY_EXPR(Referencia);
-DEFINE_UNARY_EXPR(Negacion);
-DEFINE_UNARY_EXPR(Complemento);
+DEFINE_UNARY_EXPR(Desferencia,DESFE_EXPR);
+DEFINE_UNARY_EXPR(PreIncremento,PREINC_EXPR);
+DEFINE_UNARY_EXPR(PreDecremento,PREDEC_EXPR);
+DEFINE_UNARY_EXPR(PosIncremento,POSINC_EXPR);
+DEFINE_UNARY_EXPR(PosDecremento,POSDEC_EXPR);
+DEFINE_UNARY_EXPR(Referencia,REFE_EXPR);
+DEFINE_UNARY_EXPR(Negacion,NEGACION_EXPR);
+DEFINE_UNARY_EXPR(Complemento,COMPE_EXPR);
 
-#define DEFINE_ASSIGN_EXPR(name) \
+#define DEFINE_ASSIGN_EXPR(name,tipo) \
 	class name##Expr : public AssignExpr { \
 	public : \
 		name##Expr(Expr *nombre,Expr *expr1):AssignExpr(nombre,expr1){} \
 		Tipo* ValidateSemantic();\
+		int getKind() { return tipo; }\
+		void generalCodigo(CodigoGenerado * codigo);\
 }
 
-DEFINE_ASSIGN_EXPR(Asignar);
-DEFINE_ASSIGN_EXPR(MasIgual);
-DEFINE_ASSIGN_EXPR(MenosIgual);
-DEFINE_ASSIGN_EXPR(MultIgual);
-DEFINE_ASSIGN_EXPR(DivIgual);
-DEFINE_ASSIGN_EXPR(ModIgual);
-DEFINE_ASSIGN_EXPR(OrBitIgual);
-DEFINE_ASSIGN_EXPR(AndBitIgual);
-DEFINE_ASSIGN_EXPR(XorBitIgual);
-DEFINE_ASSIGN_EXPR(AsigCorIzqIgual);
-DEFINE_ASSIGN_EXPR(AsigCorDerIgual);
+DEFINE_ASSIGN_EXPR(Asignar,ASIG_EXPR);
+DEFINE_ASSIGN_EXPR(MasIgual,MASIGULA_EXPR);
+DEFINE_ASSIGN_EXPR(MenosIgual,MENOSIGUAL_EXPR);
+DEFINE_ASSIGN_EXPR(MultIgual,MULTIGUAL_EXPR);
+DEFINE_ASSIGN_EXPR(DivIgual,DIVIGUAL_EXPR);
+DEFINE_ASSIGN_EXPR(ModIgual,MODIGUAL_EXPR);
+DEFINE_ASSIGN_EXPR(OrBitIgual,ORBITIGUAL_EXPR);
+DEFINE_ASSIGN_EXPR(AndBitIgual,ANDIGUAL_EXPR);
+DEFINE_ASSIGN_EXPR(XorBitIgual,XORIGUAL_EXPR);
+DEFINE_ASSIGN_EXPR(AsigCorIzqIgual,CORIIZIGUAL_EXPR);
+DEFINE_ASSIGN_EXPR(AsigCorDerIgual,CORIDERIGUAL_EXPR);
 
 class TernarioExpr:public Expr{
  public:
@@ -121,6 +192,8 @@ class TernarioExpr:public Expr{
 	Expr *expr1;	
 	Expr *expr2;
 	Tipo* ValidateSemantic();
+	int getKind() { return TERNARIO_EXPR; }
+
 };
 
 class NumberExpr:public Expr{
@@ -130,6 +203,7 @@ class NumberExpr:public Expr{
 	}	
 	int value;
 	Tipo* ValidateSemantic(){ return new IntTipo();}
+	int getKind() { return NUM_EXPR; }
 };
 class StringExpr:public Expr{
  public:
@@ -138,6 +212,7 @@ class StringExpr:public Expr{
 	}	
 	char* value;
 	Tipo* ValidateSemantic(){ return new StringTipo();}
+	int getKind() { return STRING_EXPR; }
 };
 class CharExpr:public Expr{
  public:
@@ -146,6 +221,7 @@ class CharExpr:public Expr{
 	}	
 	char value;
 	Tipo* ValidateSemantic(){ return new CharTipo();}
+	int getKind() { return CHAR_EXPR; }
 };
 
 class ArrayExpr:public Expr{
@@ -156,6 +232,7 @@ class ArrayExpr:public Expr{
 	}	
 	ExprList *value;
 	Tipo* ValidateSemantic();
+	int getKind() { return ARRAY_EXPR; }
 };
 
 
@@ -170,6 +247,7 @@ class VarNombreExpr:public Expr{
 			
 	}
 	Tipo* ValidateSemantic();
+	int getKind() { return ID_EXPR; }
 };
 class VarNombreArrayExpr:public Expr{
  public:
@@ -182,6 +260,7 @@ class VarNombreArrayExpr:public Expr{
 			
 	}	
 	Tipo* ValidateSemantic();
+	int getKind() { return ARRAYNOMBRE_EXPR; }
 };
 
 class FuncionExpr: public Expr 
@@ -196,6 +275,7 @@ class FuncionExpr: public Expr
 			
 		}
 		Tipo* ValidateSemantic();
+		int getKind() { return CALL_EXPR; }
 
 };
 

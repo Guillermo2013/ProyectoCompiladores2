@@ -7,7 +7,7 @@ OBJ_FILE = ${SRCFILES:.cpp=.o}
 .PHONY: clean 
 
 $(TARGET): $(OBJ_FILE)
-	g++ -o $@ $(OBJ_FILE)
+	g++ -std=c++11 -o $@ $(OBJ_FILE)
 
 
 $(EXPR_LEXER_SRC) : exemploClase.l
@@ -17,7 +17,7 @@ $(EXPR_PARSE_SRC) : expr.y
 	bison --defines=tokens.h -rall -o  $@ $< 
 
 %.o: %.cpp 
-	g++ -c -o $@ $<
+	g++ -std=c++11 -c -o $@ $<
 
 run : $(TARGET)
 	./$(TARGET) exemplo.txt 

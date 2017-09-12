@@ -42,15 +42,15 @@ printf("Error : String(%s) Line %d : %s  file: %s   \n",yytext,yylineno,msg,yyfi
 
 %type <int_t> TK_NUMERO
 %type <expr_t> expr term factor add conditional corrimiento exprForBit unary andOr ternario assignExpr opAssign optionalAssign parametroList 
-%type <expr_t> optparametroList optionalExpr incrementopt
+%type <expr_t> optparametroList optionalExpr 
 %type <parametro_t>  parametro
 %type <string_t> TK_VarNombre TK_String Type
 %type <char_t> TK_CharLit
 %type <statement_t> statement assign_statement print_statement if_statement statementList while_statement scanf_statement 
 %type <statement_t>  producce_statement BlockStatementOrStatement for_statement for_assign opAssignStatement  
 %type <statement_t> doWhile_statement declaration_statement funcion_statement callFuncion_statement optionalBlock
-%type <statement_t> statementListFuncion statementFuncion BlockStatementFuncion return_statement declarationList
-%type <statement_t> inputStatementFuncion inputStatement multiDeclaration uniMultideclaration multideclarationImput
+%type <statement_t> statementListFuncion statementFuncion BlockStatementFuncion return_statement declarationList incremente_statement
+%type <statement_t> inputStatementFuncion inputStatement multiDeclaration uniMultideclaration multideclarationImput incrementopt
 %type <exprlist_t> arg_list optionalParameter
 
 %%
@@ -79,6 +79,22 @@ statement : if_statement %dprec 1 {$$ = $1;}
 	  | doWhile_statement TK_PuntoComma %dprec 8 {$$ = $1;}
 	  | funcion_statement %dprec 9{$$ =$1;}
 	  | callFuncion_statement TK_PuntoComma %dprec 10{$$ = $1;}
+	  | incremente_statement TK_PuntoComma %dprec 11 {$$ = $1;}
+;
+
+
+incremente_statement:TK_Incremento TK_VarNombre TK_left_corchete  expr TK_rigth_corchete {
+			$$ = new PreIncrementoStatement(new VarNombreArrayExpr($2,$4));}
+		    | TK_Decremento TK_VarNombre TK_left_corchete  expr TK_rigth_corchete  {
+			$$ = new PreDecrementoStatement(new VarNombreArrayExpr($2,$4));}
+		    |  TK_VarNombre TK_left_corchete  expr TK_rigth_corchete TK_Decremento  {
+			$$ = new PosDecrementoStatement(new VarNombreArrayExpr($1,$3));}	
+		    |  TK_VarNombre TK_left_corchete  expr TK_rigth_corchete TK_Incremento {
+			$$ = new PosIncrementoStatement(new VarNombreArrayExpr($1,$3));}	
+		    |  TK_VarNombre TK_Decremento {$$ = new PosDecrementoStatement(new VarNombreExpr($1));}	
+		    |  TK_VarNombre TK_Incremento {$$ = new PosIncrementoStatement(new VarNombreExpr($1));}
+		    |  TK_Decremento TK_VarNombre {$$ = new PreDecrementoStatement(new VarNombreExpr($2));}	
+		    |  TK_Incremento TK_VarNombre {$$ = new PreIncrementoStatement(new VarNombreExpr($2));}	
 ;
 
 
@@ -215,15 +231,16 @@ assign_statement : TK_VarNombre  opAssignStatement expr { $$ = $2; ((AssignState
 		 ((AssignStatement*)$$)->expr1 = $3;}
 		 | TK_VarNombre TK_left_corchete  expr TK_rigth_corchete opAssignStatement expr{ 
                  $$ = $5;((AssignStatement*)$$)->nombre = new VarNombreArrayExpr($1,$3); ((AssignStatement*)$$)->expr1 = $6; }
-		 | TK_Refenciacion TK_VarNombre opAssignStatement expr  { incrementopt
+		 | TK_Refenciacion TK_VarNombre opAssignStatement expr  { 
 	    	 $$ = $3; ((AssignStatement*)$$)->nombre = new ReferenciaExpr(new VarNombreExpr($2)); ((AssignStatement*)$$)->expr1 = $4; }
 		 | TK_Op_mul TK_VarNombre incrementopt opAssignStatement expr  {$$ = new BlockStatement(); 
-		((AssignStatement*)$3)->nombre = new DesferenciaExpr(new VarNombreExpr($2)); ((AssignStatement*)$3)->expr1 = $5;
-		((BlockStatement*)$$)->addStatement($3); if($4 !=NULL){ ((PosIncrementoExpr*)$4)->expr1 = new VarNombreExpr($2); 
+		((AssignStatement*)$4)->nombre = new DesferenciaExpr(new VarNombreExpr($2)); ((AssignStatement*)$4)->expr1 = $5;
+		((BlockStatement*)$$)->addStatement($3); if($3 !=NULL){ ((PreIncrementoStatement*)$3)->expr1 = new VarNombreExpr($2); 
 		((BlockStatement*)$$)->addStatement($4);} }
 ;
-:TK_Incremento {$$ = new PosIncrementoExpr(NULL); }
-	    |TK_Decremento {$$ = new PosDecrementoExpr(NULL);}
+
+incrementopt :TK_Incremento {$$ = new PosIncrementoStatement(NULL); }
+	    |TK_Decremento {$$ = new PosDecrementoStatement(NULL);}
 	    | {$$ = NULL;}
 ;
 

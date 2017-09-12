@@ -7,6 +7,46 @@ typedef pair<char *, int> elemento;
 StackContenido *stack = new StackContenido();
 
 
+map<string, bool> TemporalesMaps ({
+    {"$t0", false}, 
+    {"$t1", false}, 
+    {"$t2", false}, 
+    {"$t3", false},
+    {"$t4", false},
+    {"$t5", false},
+    {"$t6", false},
+    {"$t7", false},
+    {"$t8", false},
+    {"$t9", false}
+
+});
+int cantidadLTE =0;
+int cantidadGTE =0;
+int cantidadEQ =0;
+int cantidadInput =0;
+int cantidadIf =0;
+int cantidadWhile =0;
+int cantidadFor =0;
+int cantidadMsg =0;
+
+string data="#include \"screen.h\"\n #include \"system.h\"\n.global main\n.data\n";
+
+
+string NewTemp() {
+    std::map<string, bool>::iterator it=TemporalesMaps.begin();
+    while (it!=TemporalesMaps.end()){
+        if(!it->second) {
+            TemporalesMaps[it->first] = true;
+            return it->first;
+        }
+	it++;
+     }
+}
+
+void freeTemp(string temporal) {
+    if(TemporalesMaps[temporal])
+        TemporalesMaps[temporal] = false;
+}
 
 Tipo* ArrayExpr :: ValidateSemantic(){
   ExprList::iterator it = value->begin();
@@ -392,7 +432,7 @@ void DecVariableStatement :: ValidateSemantic(){
    else
       stack->Stack.back()->DeclareVariable(nombre,new CharTipo()); 
   
-if(multideclatation !=NULL){
+ if(multideclatation !=NULL){
 	list<Statement*> multi = ((BlockStatement*)multideclatation)->listStatement;
 	list<Statement*>::iterator it = multi.begin();
 	 while (it != multi.end()) {
@@ -403,9 +443,6 @@ if(multideclatation !=NULL){
 	  }
    } 
 } 
-
-
-
 
 void Funcion_Statement :: ValidateSemantic(){
 
@@ -533,8 +570,7 @@ Tipo* FuncionExpr :: ValidateSemantic(){
   return ((FuncionTipo*)tipo)->retorno;
 }
 void CallFuncionStatement :: ValidateSemantic(){
-
-list<TablaSimbolos*>::iterator it = stack->Stack.begin();
+ list<TablaSimbolos*>::iterator it = stack->Stack.begin();
   bool exite = false;
   Tipo * tipo;
   while (it != stack->Stack.end()) {
@@ -579,8 +615,6 @@ list<TablaSimbolos*>::iterator it = stack->Stack.begin();
       itExpr++;
       itTipo++;
     }
-
-
 }
 
 
@@ -599,4 +633,376 @@ Tipo * Parametro :: ValidateSemantic(){
   else if(strcmp(type,"char[]")==0)
     return new ArrayTipo(new CharTipo());
   
+}
+#define IMPLEMENT_INC_Statement_SEMANTIC(name) \
+  void name##Statement::ValidateSemantic(){ \
+    Tipo * valor = expr1->ValidateSemantic();\
+  if(valor->isA(funcionTipo) || expr1->ValidateSemantic()->isA(funcionTipo)||\
+    valor->isA(procedimientoTipo) || expr1->ValidateSemantic()->isA(procedimientoTipo)){\
+    cout<< "Error : no se puede realizar operaciones con  funciones  linea " << yylineno << endl;\
+    exit(0);\
+  }\
+   }
+
+   IMPLEMENT_INC_Statement_SEMANTIC(PreIncremento);
+IMPLEMENT_INC_Statement_SEMANTIC(PreDecremento);
+IMPLEMENT_INC_Statement_SEMANTIC(PosIncremento);
+IMPLEMENT_INC_Statement_SEMANTIC(PosDecremento);
+
+//--------generar codigo----
+void NumberExpr:: generalCodigo(CodigoGenerado * codigo)
+{
+	
+	string TemporalActual = NewTemp();
+	codigo->codigo = "li " + TemporalActual + ", " + to_string(value) +"\n";
+    codigo->temporal = TemporalActual;
+
+}
+
+void VarNombreExpr:: generalCodigo(CodigoGenerado * codigo)
+{
+	if(exiteval(id)){
+		data += id+": .word 0 \n";
+		valores.push_back(id);
+	}
+	string TemporalActual = NewTemp();
+	codigo->codigo = "lw " + TemporalActual + ", " + id +"\n";
+    codigo->temporal = TemporalActual;
+}
+
+void AddExpr::generalCodigo(CodigoGenerado * codigo)
+{
+	CodigoGenerado *codigo1 = new CodigoGenerado();
+	CodigoGenerado *codigo2 = new CodigoGenerado();
+
+    expr1->generalCodigo(codigo1);
+	expr2->generalCodigo(codigo2);
+	
+	freeTemp(codigo1->temporal);
+	freeTemp(codigo2->temporal);
+	
+	string TemporalActual = NewTemp();
+	string codigoAdd;
+
+	if(expr1->isA(NUM_EXPR)){
+
+		codigoAdd = codigo2->codigo;
+		stringstream strs;
+  		strs <<((NumExpr*)expr1)->value;
+		codigoAdd += "addi " + TemporalActual + ", " + codigo2->temporal + ", " +  strs.str() + "\n";
+
+	}else if(expr2->isA(NUM_EXPR)){
+		codigoAdd = codigo1->codigo;
+		stringstream strs;
+  		strs <<((NumExpr*)expr2)->value;
+		codigoAdd += "addi " + TemporalActual + ", " + codigo1->temporal + ", " +  strs.str() + "\n";
+	}else{
+		codigoAdd = codigo1->codigo + codigo2->codigo;
+		codigoAdd += "add " + TemporalActual + ", " + codigo1->temporal + ", " + codigo2->temporal + "\n";
+	}
+	codigo->codigo = codigoAdd;
+	codigo->temporal = TemporalActual;
+	 
+}
+
+
+void SubExpr:: generalCodigo(CodigoGenerado * codigo)
+{
+	CodigoGenerado *codigo1 = new CodigoGenerado();
+	CodigoGenerado *codigo2 = new CodigoGenerado();
+
+    expr1->generalCodigo(codigo1);
+	expr2->generalCodigo(codigo2);
+	
+	freeTemp(codigo1->temporal);
+	freeTemp(codigo2->temporal);
+	
+	string TemporalActual = NewTemp();
+	string codigoSub;
+
+	if(expr1->isA(NUM_EXPR)){
+		stringstream strs;
+  		strs <<((NumExpr*)expr1)->value;
+		codigoSub = codigo2->codigo;
+		codigoSub += "addi " + TemporalActual + ", " + codigo2->temporal + ", -" +  strs.str() + "\n";
+
+	}else if(expr2->isA(NUM_EXPR)){
+		stringstream strs;
+  		strs <<((NumExpr*)expr2)->value;
+		codigoSub = codigo1->codigo;
+		codigoSub += "addi " + TemporalActual + ", " + codigo1->temporal + ", -" +   strs.str() + "\n";
+	}else{
+		codigoSub = codigo1->codigo + codigo2->codigo;
+		codigoSub += "sub " + TemporalActual + ", " + codigo1->temporal + ", " + codigo2->temporal + "\n";
+	}
+	codigo->codigo = codigoSub;
+	codigo->temporal = TemporalActual;
+	 
+}
+
+
+void MultExpr:: generalCodigo(CodigoGenerado * codigo)
+{
+	CodigoGenerado *codigo1 = new CodigoGenerado();
+	CodigoGenerado *codigo2 = new CodigoGenerado();
+
+    expr1->generalCodigo(codigo1);
+	expr2->generalCodigo(codigo2);
+	
+	freeTemp(codigo1->temporal);
+	freeTemp(codigo2->temporal);
+	
+	string TemporalActual = NewTemp();
+	string codigoMult = codigo1->codigo + codigo2->codigo;
+
+	codigoMult += " move $a0, " +codigo1->temporal+ "\n" +"move $a1, " +codigo2->temporal+ "\n" +"jal mult \n";
+	codigoMult += "move "+TemporalActual+", $v0 \n"; 
+
+    codigo->codigo = codigoMult;
+	codigo->temporal = TemporalActual;
+	 
+}
+
+
+void DivExpr:: generalCodigo(CodigoGenerado * codigo)
+{
+	CodigoGenerado *codigo1 = new CodigoGenerado();
+	CodigoGenerado *codigo2 = new CodigoGenerado();
+
+    expr1->generalCodigo(codigo1);
+	expr2->generalCodigo(codigo2);
+	
+	freeTemp(codigo1->temporal);
+	freeTemp(codigo2->temporal);
+	
+	string TemporalActual = NewTemp();
+	string codigoDiv = codigo1->codigo + codigo2->codigo;
+
+	codigoDiv += " move $a0, " +codigo1->temporal+ "\n" +"move $a1, " +codigo2->temporal+ "\n" +"jal divide \n";
+	codigoDiv += "move "+TemporalActual+", $a0 \n"; 
+
+    codigo->codigo = codigoDiv;
+	codigo->temporal = TemporalActual;
+	 
+}
+
+void ModExpr:: generalCodigo(CodigoGenerado * codigo)
+{
+	CodigoGenerado *codigo1 = new CodigoGenerado();
+	CodigoGenerado *codigo2 = new CodigoGenerado();
+
+    expr1->generalCodigo(codigo1);
+	expr2->generalCodigo(codigo2);
+	
+	freeTemp(codigo1->temporal);
+	freeTemp(codigo2->temporal);
+	
+	string TemporalActual = NewTemp();
+	string codigoMod = codigo1->codigo + codigo2->codigo;
+
+	codigoMod += " move $a0, " +codigo1->temporal+ "\n" +"move $a1, " +codigo2->temporal+ "\n" +"jal divide \n";
+	codigoMod += "move "+TemporalActual+", $a1 \n"; 
+
+    codigo->codigo = codigoMod;
+	codigo->temporal = TemporalActual;
+	 
+}
+
+
+void ExponentExpr:: generalCodigo(CodigoGenerado * codigo)
+{
+	CodigoGenerado *codigo1 = new CodigoGenerado();
+	CodigoGenerado *codigo2 = new CodigoGenerado();
+
+    expr1->generalCodigo(codigo1);
+	expr2->generalCodigo(codigo2);
+	
+	freeTemp(codigo1->temporal);
+	freeTemp(codigo2->temporal);
+	string codigoExponent;	
+	string TemporalActual = NewTemp();
+	
+	codigoExponent ="move $a0, "+codigo1->temporal+"\n";
+	codigoExponent ="move $a1, "+codigo2->temporal+"\n";
+	codigoExponent ="jal exponecial \n"; 
+	codigo->codigo = codigoExponent;
+	codigoExponent ="move "+TemporalActual+", $v0 \n";
+	codigo->temporal = TemporalActual;
+	
+}
+void LTExpr:: generalCodigo(CodigoGenerado * codigo)
+{
+	CodigoGenerado *codigo1 = new CodigoGenerado();
+	CodigoGenerado *codigo2 = new CodigoGenerado();
+
+    expr1->generalCodigo(codigo1);
+	expr2->generalCodigo(codigo2);
+	
+	freeTemp(codigo1->temporal);
+	freeTemp(codigo2->temporal);
+	
+	string TemporalActual = NewTemp();
+	string codigoLT;
+
+	if(expr1->isA(NUM_EXPR)){
+
+		codigoLT = codigo2->codigo;
+		stringstream strs;
+  		strs <<((NumExpr*)expr1)->value;
+		codigoLT += "slti " + TemporalActual + ", " + codigo2->temporal + ", " +   strs.str() + "\n";
+
+	}else if(expr2->isA(NUM_EXPR)){
+		stringstream strs;
+  		strs <<((NumExpr*)expr2)->value;
+		codigoLT = codigo1->codigo;
+		codigoLT += "slti " + TemporalActual + ", " + codigo1->temporal + ", " +   strs.str() + "\n";
+	}else{
+		codigoLT = codigo1->codigo + codigo2->codigo;
+		codigoLT += "slt " + TemporalActual + ", " + codigo1->temporal + ", " + codigo2->temporal + "\n";
+	}
+	codigo->codigo = codigoLT;
+	codigo->temporal = TemporalActual;
+	 
+}
+
+
+
+
+
+void GTExpr:: generalCodigo(CodigoGenerado * codigo)
+{
+	CodigoGenerado *codigo1 = new CodigoGenerado();
+	CodigoGenerado *codigo2 = new CodigoGenerado();
+
+    expr1->generalCodigo(codigo1);
+	expr2->generalCodigo(codigo2);
+	
+	freeTemp(codigo1->temporal);
+	freeTemp(codigo2->temporal);
+	
+	string TemporalActual = NewTemp();
+	string codigoGT;
+
+	codigoGT = codigo1->codigo + codigo2->codigo;
+	codigoGT += "slt " + TemporalActual + ", " + codigo2->temporal + ", " + codigo1->temporal + "\n";
+	
+	codigo->codigo = codigoGT;
+	codigo->temporal = TemporalActual;
+	 
+}
+
+void GTEExpr:: generalCodigo(CodigoGenerado * codigo)
+{
+	CodigoGenerado *codigo1 = new CodigoGenerado();
+	CodigoGenerado *codigo2 = new CodigoGenerado();
+
+    expr1->generalCodigo(codigo1);
+	expr2->generalCodigo(codigo2);
+	
+	freeTemp(codigo1->temporal);
+	freeTemp(codigo2->temporal);
+	
+	string TemporalActual = NewTemp();
+	string codigoGTE;
+
+	
+
+	codigoGTE = codigo1->codigo + codigo2->codigo;
+	codigoGTE += "beq " +codigo1->temporal + ", " + codigo2->temporal + ", igualGTE"+to_string(cantidadGTE)+" \n";
+	codigoGTE += "sub " + TemporalActual + ", " + codigo1->temporal + ", " + codigo2->temporal + "\n";
+	codigoGTE += "slt " + TemporalActual + ", $zero, " + TemporalActual + " \n" ;
+	codigoGTE += "bne " +TemporalActual + ", $zero , igualGTE" +to_string(cantidadGTE)+" \n";;
+	codigoGTE += "li " +TemporalActual + ", 0 \n";
+	codigoGTE += "j finGTE"+to_string(cantidadGTE)+" \n";
+	codigoGTE += "igualGTE"+to_string(cantidadGTE)+": \n";
+	codigoGTE += "li " +TemporalActual + ", 1 \n";
+	codigoGTE += "finGTE"+to_string(cantidadGTE++)+": \n";
+	codigo->codigo = codigoGTE;
+	codigo->temporal = TemporalActual;
+	 
+}
+
+void LTEExpr:: generalCodigo(CodigoGenerado * codigo)
+{
+	CodigoGenerado *codigo1 = new CodigoGenerado();
+	CodigoGenerado *codigo2 = new CodigoGenerado();
+
+    expr1->generalCodigo(codigo1);
+	expr2->generalCodigo(codigo2);
+	
+	freeTemp(codigo1->temporal);
+	freeTemp(codigo2->temporal);
+	
+	string TemporalActual = NewTemp();
+	string codigoLTE;
+
+	
+
+	codigoLTE = codigo1->codigo + codigo2->codigo;
+	codigoLTE += "beq " +codigo1->temporal + ", " + codigo2->temporal + ", igualLTE"+to_string(cantidadLTE)+" \n";
+	codigoLTE += "sub " + TemporalActual + ", " + codigo2->temporal + ", " + codigo1->temporal + "\n";
+	codigoLTE += "slt " + TemporalActual + ", $zero, " + TemporalActual + " \n" ;
+	codigoLTE += "bne " +TemporalActual + ", $zero, igualLTE"+to_string(cantidadLTE)+" \n";
+	codigoLTE += "li " +TemporalActual + ", 0 \n";
+	codigoLTE += "j finLTE"+to_string(cantidadLTE)+" \n";
+	codigoLTE += "igualLTE"+to_string(cantidadLTE)+": \n";
+	codigoLTE += "li " +TemporalActual + ", 1 \n";
+	codigoLTE += "finLTE"+to_string(cantidadLTE++)+": \n";
+	codigo->codigo = codigoLTE;
+	codigo->temporal = TemporalActual;
+	 
+}
+
+void NEExpr:: generalCodigo(CodigoGenerado * codigo)
+{
+	
+	CodigoGenerado *codigo1 = new CodigoGenerado();
+	CodigoGenerado *codigo2 = new CodigoGenerado();
+
+    expr1->generalCodigo(codigo1);
+	expr2->generalCodigo(codigo2);
+	
+	freeTemp(codigo1->temporal);
+	freeTemp(codigo2->temporal);
+	
+	string TemporalActual = NewTemp();
+	string codigoNE;
+	
+	codigoNE = codigo1->codigo + codigo2->codigo;
+	codigoNE += "xor " + TemporalActual + ", " + codigo2->temporal + ", " + codigo1->temporal + "\n";
+	codigoNE += "slt " + TemporalActual + ", $zero, " + TemporalActual + " \n" ;
+	
+	codigo->codigo = codigoNE;
+	codigo->temporal = TemporalActual;
+	 
+}
+
+
+void EQExpr :: generalCodigo(CodigoGenerado * codigo)
+{
+	
+	CodigoGenerado *codigo1 = new CodigoGenerado();
+	CodigoGenerado *codigo2 = new CodigoGenerado();
+
+    expr1->generalCodigo(codigo1);
+	expr2->generalCodigo(codigo2);
+	
+	freeTemp(codigo1->temporal);
+	freeTemp(codigo2->temporal);
+	
+	string TemporalActual = NewTemp();
+	string codigoEQ;
+	
+	codigoEQ = codigo1->codigo + codigo2->codigo;
+	codigoEQ += "beq " +codigo1->temporal + ", " + codigo2->temporal + ", igualEQ"+to_string(cantidadEQ)+" \n";
+	codigoEQ += "li " +TemporalActual + ",0 \n";
+	codigoEQ += "j finEQ"+to_string(cantidadEQ)+" \n";
+	codigoEQ += "igualEQ"+to_string(cantidadEQ)+": \n";
+	codigoEQ += "li " +TemporalActual + ",1 \n";
+	codigoEQ += "finEQ"+to_string(cantidadEQ++)+": \n";
+		
+	
+	codigo->codigo = codigoEQ;
+	codigo->temporal = TemporalActual;
+	 
 }
