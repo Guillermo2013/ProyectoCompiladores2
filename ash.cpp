@@ -312,6 +312,16 @@ void DecArrayStatement :: ValidateSemantic(){
      stack->Stack.back()->DeclareVariable(nombre,new ArrayTipo(new IntTipo()));
    else
       stack->Stack.back()->DeclareVariable(nombre,new ArrayTipo(new CharTipo()));
+     if(multideclatation !=NULL){
+	list<Statement*> multi = ((BlockStatement*)multideclatation)->listStatement;
+	list<Statement*>::iterator it = multi.begin();
+	 while (it != multi.end()) {
+	    Statement * st = *it;
+	    ((DecVariableStatement*)st)->type = this->type;
+	    st->ValidateSemantic();
+		it++;
+	  }
+   }
 }
 void DecApuntadorStatement :: ValidateSemantic(){
 
@@ -340,6 +350,16 @@ void DecApuntadorStatement :: ValidateSemantic(){
      stack->Stack.back()->DeclareVariable(nombre,new ApuntadorTipo(new IntTipo()));
    else
       stack->Stack.back()->DeclareVariable(nombre,new ApuntadorTipo(new CharTipo()));
+   if(multideclatation !=NULL){
+	list<Statement*> multi = ((BlockStatement*)multideclatation)->listStatement;
+	list<Statement*>::iterator it = multi.begin();
+	 while (it != multi.end()) {
+	    Statement * st = *it;
+	    ((DecVariableStatement*)st)->type = this->type;
+	    st->ValidateSemantic();
+		it++;
+	  }
+   }
 }
 
 void DecVariableStatement :: ValidateSemantic(){
@@ -370,7 +390,18 @@ void DecVariableStatement :: ValidateSemantic(){
    if(type == "int")
      stack->Stack.back()->DeclareVariable(nombre,new IntTipo());
    else
-      stack->Stack.back()->DeclareVariable(nombre,new CharTipo());  
+      stack->Stack.back()->DeclareVariable(nombre,new CharTipo()); 
+  
+if(multideclatation !=NULL){
+	list<Statement*> multi = ((BlockStatement*)multideclatation)->listStatement;
+	list<Statement*>::iterator it = multi.begin();
+	 while (it != multi.end()) {
+	    Statement * st = *it;
+	    ((DecVariableStatement*)st)->type = this->type;
+	    st->ValidateSemantic();
+	    it++;
+	  }
+   } 
 } 
 
 

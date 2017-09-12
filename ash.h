@@ -358,12 +358,13 @@ class DecArrayStatement: public Statement
 		char  * nombre;
 		Expr * tam;		
 		Expr * inicializar;
-		DecArrayStatement(char  * type,char  * nombre,Expr * tam,Expr *inicializar){
+		Statement * multideclatation;
+		DecArrayStatement(char  * type,char  * nombre,Expr * tam,Expr *inicializar,Statement * multideclatation){
 			this->type = type;
 			this->nombre = nombre;
 			this->tam = tam;
 			this->inicializar = inicializar;
-			
+			this->multideclatation = multideclatation;
 		}
 		void ValidateSemantic();
 };
@@ -374,11 +375,12 @@ class DecApuntadorStatement: public Statement
 		char  * type;
 		char  * nombre;		
 		Expr * inicializar;
-		DecApuntadorStatement(char  *type,char  *nombre,Expr *inicializar){
+		Statement * multideclatation;
+		DecApuntadorStatement(char  *type,char  *nombre,Expr *inicializar,Statement * multideclatation){
 			this->type = type;
 			this->nombre = nombre;
 			this->inicializar = inicializar;
-			
+			this->multideclatation = multideclatation;
 		}
 
 		void ValidateSemantic();
@@ -390,12 +392,12 @@ class DecVariableStatement: public Statement
 		char  * type;
 		char  * nombre;		
 		Expr * inicializar;
-		
-		DecVariableStatement(char  * type,char  * nombre,Expr *inicializar){
+		Statement * multideclatation;
+		DecVariableStatement(char  * type,char  * nombre,Expr *inicializar,Statement * multideclatation){
 			this->type = type;
 			this->nombre = nombre;
 			this->inicializar = inicializar;
-			
+			this->multideclatation = multideclatation;
 		}
 		void ValidateSemantic();
 		
@@ -449,6 +451,21 @@ class CallFuncionStatement: public Statement
 
 		void ValidateSemantic();
 };
+
+#define DEFINE_Increment_Statement(name) \
+	class name##Statement : public Statement { \
+	public : \
+		Expr *expr1;\
+		name##Statement(Expr *expr1){this->expr1 = expr1;} \
+		void ValidateSemantic();\
+	}
+
+
+DEFINE_Increment_Statement(PreIncremento);
+DEFINE_Increment_Statement(PreDecremento);
+DEFINE_Increment_Statement(PosIncremento);
+DEFINE_Increment_Statement(PosDecremento);
+
 
 class Parametro : public Expr
 {

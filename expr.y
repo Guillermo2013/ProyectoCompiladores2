@@ -42,7 +42,7 @@ printf("Error : String(%s) Line %d : %s  file: %s   \n",yytext,yylineno,msg,yyfi
 
 %type <int_t> TK_NUMERO
 %type <expr_t> expr term factor add conditional corrimiento exprForBit unary andOr ternario assignExpr opAssign optionalAssign parametroList 
-%type <expr_t> optparametroList optionalExpr
+%type <expr_t> optparametroList optionalExpr incrementopt
 %type <parametro_t>  parametro
 %type <string_t> TK_VarNombre TK_String Type
 %type <char_t> TK_CharLit
@@ -50,7 +50,7 @@ printf("Error : String(%s) Line %d : %s  file: %s   \n",yytext,yylineno,msg,yyfi
 %type <statement_t>  producce_statement BlockStatementOrStatement for_statement for_assign opAssignStatement  
 %type <statement_t> doWhile_statement declaration_statement funcion_statement callFuncion_statement optionalBlock
 %type <statement_t> statementListFuncion statementFuncion BlockStatementFuncion return_statement declarationList
-%type <statement_t> inputStatementFuncion inputStatement multiDeclaration uniMultideclaration
+%type <statement_t> inputStatementFuncion inputStatement multiDeclaration uniMultideclaration multideclarationImput
 %type <exprlist_t> arg_list optionalParameter
 
 %%
@@ -87,20 +87,23 @@ callFuncion_statement : TK_VarNombre TK_left_par optionalParameter TK_rigth_par 
 optionalParameter:arg_list %dprec 2 {$$ = $1;}
 		| %dprec 1 {$$ = NULL;}
 ;
-declaration_statement: Type TK_VarNombre TK_left_corchete  expr TK_rigth_corchete optionalAssign multiDeclaration {
-			$$ = new DecArrayStatement($1,$2,$4,$6);}	
-	              |Type TK_Op_mul TK_VarNombre optionalAssign multiDeclaration {$$ = new DecApuntadorStatement($1,$3,$4);}
- 		      |Type TK_VarNombre optionalAssign multiDeclaration {$$ = new DecVariableStatement($1,$2,$3);}
+declaration_statement: Type TK_VarNombre TK_left_corchete  expr TK_rigth_corchete optionalAssign multideclarationImput {
+			$$ = new DecArrayStatement($1,$2,$4,$6,$7);}	
+	              |Type TK_Op_mul TK_VarNombre optionalAssign multideclarationImput {$$ = new DecApuntadorStatement($1,$3,$4,$5);}
+ 		      |Type TK_VarNombre optionalAssign multideclarationImput {$$ = new DecVariableStatement($1,$2,$3,$4);}
 		      
 ; 
 
-multiDeclaration:TK_Comma uniMultideclaration TK_Comma uniMultideclaration %dprec 1 {$$ = NULL;}
-		| TK_Comma uniMultideclaration %dprec 2 {$$ = NULL;}
+multideclarationImput:TK_Comma multiDeclaration {$$ = $2;}
+			| { $$ = NULL;}
+;
+multiDeclaration: multiDeclaration TK_Comma uniMultideclaration %dprec 1 {$$ = $1; ((BlockStatement*)$$)->addStatement($3);}
+		|  uniMultideclaration %dprec 2 {$$ = new BlockStatement(); ((BlockStatement*)$$)->addStatement($1);}
 
 ;
-uniMultideclaration  :TK_VarNombre TK_left_corchete  expr TK_rigth_corchete optionalAssign {$$ = new DecArrayStatement(NULL,$1,$3,$5);}	
-	             | TK_Op_mul TK_VarNombre optionalAssign {$$ = new DecApuntadorStatement(NULL,$2,$3);}
- 		     | TK_VarNombre optionalAssign {$$ = new DecVariableStatement(NULL,$1,$2);}
+uniMultideclaration  :TK_VarNombre TK_left_corchete  expr TK_rigth_corchete optionalAssign {$$ = new DecArrayStatement(NULL,$1,$3,$5,NULL);}	
+	             | TK_Op_mul TK_VarNombre optionalAssign {$$ = new DecApuntadorStatement(NULL,$2,$3,NULL);}
+ 		     | TK_VarNombre optionalAssign {$$ = new DecVariableStatement(NULL,$1,$2,NULL);}
  
 ;
 funcion_statement:Type TK_VarNombre TK_left_par optparametroList TK_rigth_par opt_eols optionalBlock {$$ = new Funcion_Statement($1,$2,$4,$7);}
@@ -120,11 +123,11 @@ parametroList:parametroList TK_Comma parametro %dprec 2 {$$ = $1; ((Parametros*)
 	     |parametro %dprec 1 { $$ = new Parametros();((Parametros*)$$)->addParametro($1);}
 ;
 
-parametro: Type TK_VarNombre { $$ = new Parametro($1,new DecVariableStatement($1,$2,NULL));}
+parametro: Type TK_VarNombre { $$ = new Parametro($1,new DecVariableStatement($1,$2,NULL,NULL));}
 	 | Type TK_Op_mul TK_VarNombre { const char * tipo = $1 == "int"? "int*":"char*"; 
-	   $$ = new Parametro(tipo, new DecApuntadorStatement($1,$3,NULL)); }
+	   $$ = new Parametro(tipo, new DecApuntadorStatement($1,$3,NULL,NULL)); }
 	 | Type TK_VarNombre TK_left_corchete optionalExpr TK_rigth_corchete  { const char * tipo = $1 == "int"? "int[]":"char[]";
-           $$ = new Parametro(tipo,new DecArrayStatement($1,$2,$4,NULL)); }
+           $$ = new Parametro(tipo,new DecArrayStatement($1,$2,$4,NULL,NULL)); }
 ;
 optionalExpr:expr %dprec 2 {$$ = $1;}
 	     | %dprec 1 {$$ = new NumberExpr(0);}
@@ -212,10 +215,16 @@ assign_statement : TK_VarNombre  opAssignStatement expr { $$ = $2; ((AssignState
 		 ((AssignStatement*)$$)->expr1 = $3;}
 		 | TK_VarNombre TK_left_corchete  expr TK_rigth_corchete opAssignStatement expr{ 
                  $$ = $5;((AssignStatement*)$$)->nombre = new VarNombreArrayExpr($1,$3); ((AssignStatement*)$$)->expr1 = $6; }
-		 | TK_Refenciacion TK_VarNombre opAssignStatement expr  { 
+		 | TK_Refenciacion TK_VarNombre opAssignStatement expr  { incrementopt
 	    	 $$ = $3; ((AssignStatement*)$$)->nombre = new ReferenciaExpr(new VarNombreExpr($2)); ((AssignStatement*)$$)->expr1 = $4; }
-		 | TK_Op_mul TK_VarNombre opAssignStatement expr  { 
-	    	 $$ = $3; ((AssignStatement*)$$)->nombre = new DesferenciaExpr(new VarNombreExpr($2)); ((AssignStatement*)$$)->expr1 = $4; }
+		 | TK_Op_mul TK_VarNombre incrementopt opAssignStatement expr  {$$ = new BlockStatement(); 
+		((AssignStatement*)$3)->nombre = new DesferenciaExpr(new VarNombreExpr($2)); ((AssignStatement*)$3)->expr1 = $5;
+		((BlockStatement*)$$)->addStatement($3); if($4 !=NULL){ ((PosIncrementoExpr*)$4)->expr1 = new VarNombreExpr($2); 
+		((BlockStatement*)$$)->addStatement($4);} }
+;
+:TK_Incremento {$$ = new PosIncrementoExpr(NULL); }
+	    |TK_Decremento {$$ = new PosDecrementoExpr(NULL);}
+	    | {$$ = NULL;}
 ;
 
 	
