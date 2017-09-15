@@ -12,6 +12,7 @@ int  validateChar();
 %%
 [ \t]   { /*nada */} 
 "//".*\n {return TK_EOL;}
+#.*\n   { return TK_EOL;}
 "/*" 	{ BEGIN(commentMultLine);}
 "\n"+	{ return TK_EOL;}
 "+"	{ return TK_Op_add;}

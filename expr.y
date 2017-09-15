@@ -20,7 +20,7 @@ printf("Error : String(%s) Line %d : %s  file: %s   \n",yytext,yylineno,msg,yyfi
 	
 #define YYERROR_VERBOSE 1
 #define YYDEBUG 1
-Statement *input;
+Statement *input = NULL;
 %}
 %glr-parser
 
@@ -63,8 +63,9 @@ inputs :opt_eols  inputStatement opt_eols { input = $2;}
 statementList:statementList  opt_eols statement %dprec 2 {$$ = $1; ((BlockStatement*)$$)->addStatement($3);}
 	     |statement %dprec 1 { $$ = new BlockStatement(); ((BlockStatement*)$$)->addStatement($1);}
 ;
-declarationList:declarationList  opt_eols declaration_statement TK_PuntoComma %dprec 2	 {$$ = $1; ((BlockStatement*)$$)->addStatement($3);}
-	     |declaration_statement TK_PuntoComma %dprec 1 { $$ = new BlockStatement(); ((BlockStatement*)$$)->addStatement($1);}
+declarationList:declarationList  opt_eols declaration_statement TK_PuntoComma %dprec 1	 {$$ = $1; ((BlockStatement*)$$)->addStatement($3);}
+	     |declaration_statement TK_PuntoComma %dprec 2 { $$ = new BlockStatement(); ((BlockStatement*)$$)->addStatement($1);}
+	     
 ;
 
 inputStatement: declarationList opt_eols statementList %dprec 2 {$$ = $1; ((BlockStatement*)$$)->addStatement($3);}
@@ -103,13 +104,13 @@ incremente_statement:TK_Incremento TK_VarNombre TK_left_corchete  expr TK_rigth_
 callFuncion_statement : TK_VarNombre TK_left_par optionalParameter TK_rigth_par {$$ = new CallFuncionStatement($1,$3);}
 ;
 optionalParameter:arg_list %dprec 2 {$$ = $1;}
-		| %dprec 1 {$$ = NULL;}
+		| %dprec 1 {$$ = new ExprList ;}
 ;
 declaration_statement: Type TK_VarNombre TK_left_corchete  expr TK_rigth_corchete optionalAssign multideclarationImput {
 			$$ = new DecArrayStatement($1,$2,$4,$6,$7);}	
 	              |Type TK_Op_mul TK_VarNombre optionalAssign multideclarationImput {$$ = new DecApuntadorStatement($1,$3,$4,$5);}
  		      |Type TK_VarNombre optionalAssign multideclarationImput {$$ = new DecVariableStatement($1,$2,$3,$4);}
-		      
+		      | {$$  = new BlockStatement(); }
 ; 
 
 multideclarationImput:TK_Comma multiDeclaration {$$ = $2;}
@@ -154,8 +155,10 @@ optionalExpr:expr %dprec 2 {$$ = $1;}
 optionalBlock:BlockStatementFuncion %dprec 2 {$$ = $1;}
 	     |TK_PuntoComma %dprec 1 {$$ = NULL;}
 ;
-BlockStatementFuncion : TK_left_llave opt_eols inputStatementFuncion opt_eols TK_rigth_llave  { $$ = $3;}
+BlockStatementFuncion : TK_left_llave opt_eols inputStatementFuncion opt_eols TK_rigth_llave %dprec 1 { $$ = $3;}
+			|TK_left_llave opt_eols  TK_rigth_llave %dprec 2 { $$ = NULL;}
 ;
+	
 
 inputStatementFuncion :declarationList 	opt_eols statementListFuncion %dprec 2 {$$ = $1; ((BlockStatement*)$$)->addStatement($3);}
 		      |statementListFuncion %dprec 1 {$$ = $1;}
@@ -178,7 +181,8 @@ statementFuncion : if_statement {$$ = $1;}
 ;
 
 
-return_statement :TK_Return expr {$$ = new Return_Statement($2);}
+return_statement :TK_Return expr {$$ = new Return_Statement($2);} 
+		| TK_Return {$$ = new Return_Statement(NULL);}
 	
 ;
 optionalAssign :TK_Asignacion expr %dprec 1 {$$ = $2;}
@@ -214,7 +218,7 @@ BlockStatementOrStatement: statement %dprec 1 { $$ = new BlockStatement(); ((Blo
 
 	 
 print_statement : TK_Print TK_left_par TK_String TK_Comma arg_list TK_rigth_par %dprec 2 { $$ = new PrintStatement($3,$5);}
-		|TK_Print TK_left_par TK_String TK_rigth_par %dprec 1 { $$ = new PrintStatement($3,NULL);}
+		|TK_Print TK_left_par TK_String TK_rigth_par %dprec 1 { $$ = new PrintSoloStatement($3);}
 		
 ;
 
@@ -343,7 +347,16 @@ unary : TK_Negarcion expr %dprec 1 {$$ = new NegacionExpr($2);}
       | TK_left_par TK_VarNombre TK_rigth_par TK_Incremento %dprec 12 {$$ = new PosIncrementoExpr(new VarNombreExpr($2));}
       | TK_VarNombre TK_Decremento %dprec 13 {$$ = new PosDecrementoExpr(new VarNombreExpr($1));}
       | TK_left_par TK_VarNombre TK_rigth_par TK_Decremento %dprec 14 {$$ = new PosDecrementoExpr(new VarNombreExpr($2));}
-      | factor %dprec 15{$$ = $1;}
+      |TK_Incremento TK_VarNombre TK_left_corchete  expr TK_rigth_corchete {
+			$$ = new PreIncrementoExpr(new VarNombreArrayExpr($2,$4));}
+		    | TK_Decremento TK_VarNombre TK_left_corchete  expr TK_rigth_corchete  {
+			$$ = new PreDecrementoExpr(new VarNombreArrayExpr($2,$4));}
+		    |  TK_VarNombre TK_left_corchete  expr TK_rigth_corchete TK_Decremento  {
+			$$ = new PosDecrementoExpr(new VarNombreArrayExpr($1,$3));}	
+		    |  TK_VarNombre TK_left_corchete  expr TK_rigth_corchete TK_Incremento {
+			$$ = new PosIncrementoExpr(new VarNombreArrayExpr($1,$3));}	
+		         
+	| factor %dprec 15{$$ = $1;}
 
 ;
 	

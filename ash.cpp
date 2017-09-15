@@ -35,7 +35,7 @@ int cantidadOr =0;
 int cantidadAnd = 0;
 int cantidadternario = 0;
 int cantidadNegacion = 0;
-string data="#include \"screen.h\"\n #include \"system.h\"\n.global main\n.data\n";
+string data="#include \"screen.h\"\n #include \"system.h\"\n.global clean\n.data\n";
 
 
 string NewTemp() {
@@ -54,6 +54,19 @@ void freeTemp(string temporal) {
 				TemporalesMaps[temporal] = false;
 }
 
+vector<string> split(char *phrase){
+    vector<string> list;
+    string s = string(phrase);
+    int pos = 0;
+    string token;
+    while ((pos = s.find("%d")) != string::npos || (pos = s.find("%c")) != string::npos) {
+        token = s.substr(0, pos);
+        list.push_back(token);
+        s.erase(0, pos + 2);
+    }
+    list.push_back(s);
+    return list;
+}
 
 
 void DesferenciaExpr::generalCodigo(CodigoGenerado * codigo){}
@@ -67,8 +80,8 @@ Tipo* ArrayExpr :: ValidateSemantic(){
 		Expr * primero = *it;
 		while (it != value->end()) {
 			Expr * st = *it;
-			 if(!st->ValidateSemantic()->isA(primero->ValidateSemantic()->getKind())||!st->ValidateSemantic()->isA(arrayTipo)||
-				!st->ValidateSemantic()->isA(apuntadorTipo)){
+			 if(!st->ValidateSemantic()->isA(primero->ValidateSemantic()->getKind())||st->ValidateSemantic()->isA(arrayTipo)||
+				st->ValidateSemantic()->isA(apuntadorTipo)){
 				 cout<< "Error : arreglo de diferentes tipos linea o un apuntado o un arreglo " << yylineno <<  endl;
 				 exit(0);
 			 }
@@ -588,11 +601,12 @@ void CallFuncionStatement :: ValidateSemantic(){
  list<TablaSimbolos*>::iterator it = stack->Stack.begin();
 	bool exite = false;
 	Tipo * tipo;
+
 	while (it != stack->Stack.end()) {
 		TablaSimbolos * st = *it;
 		 if(st->VariableExist(nombre)){
 			tipo = st->GetVariable(nombre); 
-			if(!tipo->isA(funcionTipo)&&!tipo->isA(funcionTipo)){
+			if(!tipo->isA(funcionTipo)&&!tipo->isA(procedimientoTipo)){
 				cout<< "Error : no se puede usar la variable como una funcion "<< nombre <<" linea " <<yylineno << endl;
 				exit(0);
 			}
@@ -604,13 +618,15 @@ void CallFuncionStatement :: ValidateSemantic(){
 			 cout<< "Error : no existe la funcion  "<< nombre <<" linea" <<yylineno << endl;
 				exit(0);
 		 }
+    /*	cout<<parametros->size()<<endl;
+    cout<<((FuncionTipo*)tipo)->parametros->size()<<endl;
 		if(parametros == NULL && ((FuncionTipo*)tipo)->parametros != NULL){
 			 cout<< "Error : demasiados parametros en la funcion "<< nombre <<" linea " <<yylineno << endl;
 				exit(0);
 		}else if(parametros->size() != ((FuncionTipo*)tipo)->parametros->size()){
 			 cout<< "Error : demasiados parametros en la funcion a "<< nombre <<" linea " <<yylineno << endl;
 				exit(0);
-		}
+		}else if(parametros->size()>0){
 		list<Expr*>::iterator itExpr = parametros->begin();
 		list<Tipo*>::iterator itTipo =  ((FuncionTipo*)tipo)->parametros->begin();
 		while(itExpr != parametros->end() && itTipo != ((FuncionTipo*)tipo)->parametros->end()){
@@ -630,6 +646,7 @@ void CallFuncionStatement :: ValidateSemantic(){
 			itExpr++;
 			itTipo++;
 		}
+	}*/
 }
 
 
@@ -719,7 +736,7 @@ void VarNombreExpr:: generalCodigo(CodigoGenerado * codigo)
 void VarNombreArrayExpr:: generalCodigo(CodigoGenerado * codigo)
 {
 	
-	CodigoGenerado * codigoValorArray;
+	CodigoGenerado * codigoValorArray = new CodigoGenerado();
 	string TemporalActual = NewTemp();
 	codigo->codigo = "la " + TemporalActual + ", " + index +"\n";
 	expr1->generalCodigo(codigoValorArray);
@@ -729,6 +746,7 @@ void VarNombreArrayExpr:: generalCodigo(CodigoGenerado * codigo)
 	codigo->codigo += "lw "+TemporalActual+", ("+TemporalActual+")\n";
   freeTemp(codigoValorArray->temporal);
 	codigo->temporal = TemporalActual;
+	delete codigoValorArray;
 }
 
 void AddExpr::generalCodigo(CodigoGenerado * codigo)
@@ -1498,7 +1516,7 @@ void AsignarExpr::generalCodigo(CodigoGenerado * codigo){
 	}
 	
 
-	codigo->codigo = codigoAssign;
+	codigo->codigo += codigoAssign;
 	codigo->temporal = codigo1->temporal;
 	delete codigo1;
 	
@@ -1530,7 +1548,7 @@ void MasIgualExpr::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
 		codigoAssign += "add"+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual2+"\n";
 		codigoAssign += "sw "+codigo1->temporal+", ("+TemporalActual+") \n ";
-		
+		freeTemp(TemporalActual2);
 		freeTemp(TemporalActual);
 	}
 
@@ -1565,9 +1583,9 @@ void MenosIgualExpr::generalCodigo(CodigoGenerado * codigo){
 		freeTemp(codigoValorArray->temporal);
 		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
-		codigoAssign += "sub "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual2+"\n";
+		codigoAssign += "sub "+codigo1->temporal +", "+TemporalActual2+", "+codigo1->temporal+"\n";
 		codigoAssign += "sw "+codigo1->temporal+", ("+TemporalActual+") \n ";
-		
+		freeTemp(TemporalActual2);
 		freeTemp(TemporalActual);
 	}
 
@@ -1604,7 +1622,7 @@ void OrBitIgualExpr::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
 		codigoAssign += "or "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual2+"\n";
 		codigoAssign += "sw "+codigo1->temporal+", ("+TemporalActual+") \n ";
-		
+		freeTemp(TemporalActual2);
 		freeTemp(TemporalActual);
 	}
 
@@ -1641,7 +1659,7 @@ void AndBitIgualExpr::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
 		codigoAssign += "or "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual2+"\n";
 		codigoAssign += "sw "+codigo1->temporal+", ("+TemporalActual+") \n ";
-		
+		freeTemp(TemporalActual2);
 		freeTemp(TemporalActual);
 	}
 
@@ -1678,7 +1696,7 @@ void XorBitIgualExpr::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
 		codigoAssign += "xor "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual2+"\n";
 		codigoAssign += "sw "+codigo1->temporal+", ("+TemporalActual+") \n ";
-		
+		freeTemp(TemporalActual2);
 		freeTemp(TemporalActual);
 	}
 	codigo->codigo = codigoAssign;
@@ -1710,9 +1728,9 @@ void AsigCorIzqIgualExpr::generalCodigo(CodigoGenerado * codigo){
 		freeTemp(codigoValorArray->temporal);
 		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
-		codigoAssign += "sll "+codigo1->temporal +", "+TemporalActual+", "+codigo1->temporal+"\n";
+		codigoAssign += "sll "+codigo1->temporal +", "+TemporalActual2+", "+codigo1->temporal+"\n";
 		codigoAssign += "sw "+codigo1->temporal+", ("+TemporalActual+") \n ";
-		
+		freeTemp(TemporalActual2);
 		freeTemp(TemporalActual);
 	}
 	codigo->codigo = codigoAssign;
@@ -1742,13 +1760,13 @@ void AsigCorDerIgualExpr::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "la "+TemporalActual+ ", "+ ((VarNombreArrayExpr*)nombre)->index +"\n";
 		freeTemp(codigoValorArray->temporal);
-		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
-		codigoAssign += "srl "+codigo1->temporal +", "+TemporalActual+", "+codigo1->temporal+"\n";
+		codigoAssign += "srl "+codigo1->temporal +", "+TemporalActual2+", "+codigo1->temporal+"\n";
 		codigoAssign += "sw "+codigo1->temporal+", ("+TemporalActual+") \n ";
 		
 		freeTemp(TemporalActual);
+		freeTemp(TemporalActual2);
 	}
 	codigo->codigo = codigoAssign;
 	codigo->temporal = codigo1->temporal;
@@ -1782,7 +1800,6 @@ void MultIgualExpr::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "la "+TemporalActual+ ", "+ ((VarNombreArrayExpr*)nombre)->index +"\n";
 		freeTemp(codigoValorArray->temporal);
-		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
 		codigoAssign += "move $a0, "+TemporalActual2+"\n";
@@ -1792,6 +1809,7 @@ void MultIgualExpr::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sw $v0, ($s0) \n ";
 		codigoAssign += "move "+codigo1->temporal+", $v0\n";
 		freeTemp(TemporalActual);
+		freeTemp(TemporalActual2);
 	}
 	freeTemp(codigo1->temporal);
 	codigo->codigo += codigoAssign;
@@ -1824,7 +1842,6 @@ void DivIgualExpr::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "la "+TemporalActual+ ", "+ ((VarNombreArrayExpr*)nombre)->index +"\n";
 		freeTemp(codigoValorArray->temporal);
-		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
 		codigoAssign += "move $a0, "+TemporalActual2+"\n";
@@ -1834,6 +1851,7 @@ void DivIgualExpr::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sw $t1, ($s0) \n ";
 		codigoAssign += "move "+codigo1->temporal+", $t1\n";
 		freeTemp(TemporalActual);
+		freeTemp(TemporalActual2);
 	}
 	freeTemp(codigo1->temporal);
 	codigo->codigo += codigoAssign;
@@ -1867,7 +1885,6 @@ void ModIgualExpr::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "la "+TemporalActual+ ", "+ ((VarNombreArrayExpr*)nombre)->index +"\n";
 		freeTemp(codigoValorArray->temporal);
-		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
 		codigoAssign += "move $a0, "+TemporalActual2+"\n";
@@ -1877,6 +1894,7 @@ void ModIgualExpr::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sw $a0, ($s0) \n ";
 		codigoAssign += "move "+codigo1->temporal+", $t1\n";
 		freeTemp(TemporalActual);
+		freeTemp(TemporalActual2);
 	}
 	freeTemp(codigo1->temporal);
 	codigo->codigo += codigoAssign;
@@ -1912,7 +1930,6 @@ void ModIgualStatement::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "la "+TemporalActual+ ", "+ ((VarNombreArrayExpr*)nombre)->index +"\n";
 		freeTemp(codigoValorArray->temporal);
-		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
 		codigoAssign += "move $a0, "+TemporalActual2+"\n";
@@ -1920,7 +1937,7 @@ void ModIgualStatement::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "move $s0, "+TemporalActual+"\n";
 		codigoAssign += "jal divide\n";
 		codigoAssign += "sw $a0, ($s0) \n ";
-		
+		freeTemp(TemporalActual2);
 		freeTemp(TemporalActual);
 	}
 	freeTemp(codigo1->temporal);
@@ -1953,7 +1970,6 @@ void DivIgualStatement::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "la "+TemporalActual+ ", "+ ((VarNombreArrayExpr*)nombre)->index +"\n";
 		freeTemp(codigoValorArray->temporal);
-		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
 		codigoAssign += "move $a0, "+TemporalActual2+"\n";
@@ -1961,7 +1977,7 @@ void DivIgualStatement::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "move $s0, "+TemporalActual+"\n";
 		codigoAssign += "jal divide\n";
 		codigoAssign += "sw $t1, ($s0) \n ";
-		
+		freeTemp(TemporalActual2);
 		freeTemp(TemporalActual);
 	}
 	freeTemp(codigo1->temporal);
@@ -2003,7 +2019,7 @@ void MultIgualStatement::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "move $s0, "+TemporalActual+"\n";
 		codigoAssign += "jal mult\n";
 		codigoAssign += "sw $v0, ($s0) \n ";
-		
+		freeTemp(TemporalActual2);
 		freeTemp(TemporalActual);
 	}
 	freeTemp(codigo1->temporal);
@@ -2017,8 +2033,7 @@ void AsigCorDerIgualStatement::generalCodigo(CodigoGenerado * codigo){
 	CodigoGenerado *codigo1 = new CodigoGenerado();
 	
 	expr1->generalCodigo(codigo1);
-	string codigoAssign;
-	codigoAssign = codigo1->codigo; 
+	string codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
     codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
@@ -2034,12 +2049,11 @@ void AsigCorDerIgualStatement::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "la "+TemporalActual+ ", "+ ((VarNombreArrayExpr*)nombre)->index +"\n";
 		freeTemp(codigoValorArray->temporal);
-		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
-		codigoAssign += "srl "+codigo1->temporal +", "+TemporalActual+", "+codigo1->temporal+"\n";
+		codigoAssign += "srl "+codigo1->temporal +", "+TemporalActual2+", "+codigo1->temporal+"\n";
 		codigoAssign += "sw "+codigo1->temporal+", ("+TemporalActual+") \n ";
-		
+		freeTemp(TemporalActual2);
 		freeTemp(TemporalActual);
 	}
 	freeTemp(codigo1->temporal);
@@ -2068,12 +2082,11 @@ void AsigCorIzqIgualStatement::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "la "+TemporalActual+ ", "+ ((VarNombreArrayExpr*)nombre)->index +"\n";
 		freeTemp(codigoValorArray->temporal);
-		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
-		codigoAssign += "sll "+codigo1->temporal +", "+TemporalActual+", "+codigo1->temporal+"\n";
+		codigoAssign += "sll "+codigo1->temporal +", "+TemporalActual2+", "+codigo1->temporal+"\n";
 		codigoAssign += "sw "+codigo1->temporal+", ("+TemporalActual+") \n ";
-		
+		freeTemp(TemporalActual2);
 		freeTemp(TemporalActual);
 	}
 	freeTemp(codigo1->temporal);
@@ -2084,9 +2097,10 @@ void AsigCorIzqIgualStatement::generalCodigo(CodigoGenerado * codigo){
 void XorBitIgualStatement::generalCodigo(CodigoGenerado * codigo){
 	
 	CodigoGenerado *codigo1 = new CodigoGenerado();
+	
 	expr1->generalCodigo(codigo1);
-	string codigoAssign;
-	codigoAssign = codigo1->codigo; 
+	string codigoAssign = codigo1->codigo; 
+
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
     codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
@@ -2102,12 +2116,12 @@ void XorBitIgualStatement::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "la "+TemporalActual+ ", "+ ((VarNombreArrayExpr*)nombre)->index +"\n";
 		freeTemp(codigoValorArray->temporal);
-		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
 		codigoAssign += "xor "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual2+"\n";
 		codigoAssign += "sw "+codigo1->temporal+", ("+TemporalActual+") \n ";
 		freeTemp(TemporalActual);
+		freeTemp(TemporalActual2);
 	}
 	freeTemp(codigo1->temporal);
 	codigo->codigo += codigoAssign;
@@ -2136,12 +2150,12 @@ void AndBitIgualStatement::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "la "+TemporalActual+ ", "+ ((VarNombreArrayExpr*)nombre)->index +"\n";
 		freeTemp(codigoValorArray->temporal);
-		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
-		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
+			codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
 		codigoAssign += "and "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual2+"\n";
 		codigoAssign += "sw "+codigo1->temporal+", ("+TemporalActual+") \n ";
 		freeTemp(TemporalActual);
+		freeTemp(TemporalActual2);
 	}
 	freeTemp(codigo1->temporal);
 	codigo->codigo += codigoAssign;
@@ -2170,12 +2184,11 @@ void OrBitIgualStatement::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "la "+TemporalActual+ ", "+ ((VarNombreArrayExpr*)nombre)->index +"\n";
 		freeTemp(codigoValorArray->temporal);
-		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
 		codigoAssign += "or "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual2+"\n";
 		codigoAssign += "sw "+codigo1->temporal+", ("+TemporalActual+") \n ";
-		
+		freeTemp(TemporalActual2);
 		freeTemp(TemporalActual);
 	}
 	freeTemp(codigo1->temporal);
@@ -2206,12 +2219,11 @@ void MenosIgualStatement::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "la "+TemporalActual+ ", "+ ((VarNombreArrayExpr*)nombre)->index +"\n";
 		freeTemp(codigoValorArray->temporal);
-		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
-		codigoAssign += "sub "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual2+"\n";
+		codigoAssign += "sub "+codigo1->temporal +", "+TemporalActual2+", "+codigo1->temporal+"\n";
 		codigoAssign += "sw "+codigo1->temporal+", ("+TemporalActual+") \n ";
-		
+		freeTemp(TemporalActual2);
 		freeTemp(TemporalActual);
 	}
 	freeTemp(codigo1->temporal);
@@ -2225,7 +2237,7 @@ void MasIgualStatement::generalCodigo(CodigoGenerado * codigo){
 	
 	expr1->generalCodigo(codigo1);
 	string codigoAssign;
-	codigoAssign = codigo1->codigo; 
+	codigoAssign = codigo1->codigo+"\n"; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
     codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
@@ -2241,12 +2253,12 @@ void MasIgualStatement::generalCodigo(CodigoGenerado * codigo){
 		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "la "+TemporalActual+ ", "+ ((VarNombreArrayExpr*)nombre)->index +"\n";
 		freeTemp(codigoValorArray->temporal);
-		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "lw "+TemporalActual2+", "+"("+TemporalActual+")\n";
 		codigoAssign += "add "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual2+"\n";
 		codigoAssign += "sw "+codigo1->temporal+", ("+TemporalActual+") \n ";
 		freeTemp(TemporalActual);
+		freeTemp(TemporalActual2);
 	}
 	freeTemp(codigo1->temporal);
 	codigo->codigo += codigoAssign;
@@ -2281,26 +2293,48 @@ void AsignarStatement::generalCodigo(CodigoGenerado * codigo){
 	delete codigo1;
 }
 void BlockStatement::generalCodigo(CodigoGenerado * codigo){
+	
 	if(!listStatement.empty())
 	{
 		list<Statement*>::iterator pos;
+
 		pos = listStatement.begin();
 		while(pos != listStatement.end())
 		{ 
 		
 			(*pos)->generalCodigo(codigo);
 			pos++;
-	codigo->codigo += "\n";
+			
 		}
-	} 
-
-	
+	}else{
+		codigo = new CodigoGenerado();
+	}
 }
 
+void PrintSoloStatement::generalCodigo(CodigoGenerado * codigo){
 
+data += " msg"+to_string(cantidadMsg)+":.asciz \""+ stringtxt+"\" \n";
+		string codigoPrint;
+	string TemporalActual = NewTemp();
+	codigoPrint = "la "+ TemporalActual +", msg"+to_string(cantidadMsg++)+"\n";
+	
+	codigoPrint += "move $a0, "+TemporalActual+"\n";        
+	codigoPrint += "jal puts\n";
+	codigo->codigo += codigoPrint;
+
+}
 void PrintStatement::generalCodigo(CodigoGenerado * codigo){
 		
-		data += " msg"+to_string(cantidadMsg)+":.asciz \""+stringtxt+"\" \n";
+ vector<string> listapalabras = split(stringtxt);
+
+ vector<string>::iterator palabras = listapalabras.begin();
+ 
+ ExprList::iterator pos;
+ if(!lista->empty()&& lista !=NULL)
+ 	 pos = lista->begin();
+
+while(palabras != listapalabras.end()){
+		data += " msg"+to_string(cantidadMsg)+":.asciz \""+(*palabras)+"\" \n";
 		string codigoPrint;
 	string TemporalActual = NewTemp();
 	codigoPrint = "la "+ TemporalActual +", msg"+to_string(cantidadMsg++)+"\n";
@@ -2309,13 +2343,10 @@ void PrintStatement::generalCodigo(CodigoGenerado * codigo){
 	codigoPrint += "jal puts\n";
 
 	freeTemp(TemporalActual);
-
-	if(!lista->empty())
+	palabras++;
+	if(!lista->empty()  && palabras != listapalabras.end() && lista != NULL)
 	{
-		ExprList::iterator pos;
-		pos = lista->begin();
-		while(pos != lista->end())
-		{
+		if(pos != lista->end()){
 			CodigoGenerado *codigo = new CodigoGenerado();
 			(*pos)->generalCodigo(codigo);
 			
@@ -2325,7 +2356,7 @@ void PrintStatement::generalCodigo(CodigoGenerado * codigo){
 			{
 				codigoPrint += "move $a0, "+codigo->temporal+"\n";        
 				codigoPrint += "jal puts\n";
-			}else if (CHAR_EXPR) {
+			}else if ((*pos)->isA(CHAR_EXPR)) {
 				codigoPrint += "move $a0, "+codigo->temporal+"\n";        
 				codigoPrint += "jal put_char\n";
 			}else{
@@ -2333,12 +2364,12 @@ void PrintStatement::generalCodigo(CodigoGenerado * codigo){
 				codigoPrint += "jal put_udecimal\n";      
 			}
 			pos++;
-			
-		}
 		} 
-	codigoPrint += "li $a0, '\\n' \n jal put_char \n";
-	codigo->codigo += codigoPrint;
-	
+	}
+		codigo->codigo += codigoPrint;
+
+	}
+
 }
 
 
@@ -2471,17 +2502,22 @@ void Producer_Statement :: generalCodigo(CodigoGenerado * codigo){
 		parametros->generalCodigo(codigoParametro);
 		list<Parametro*>::iterator pos = ((Parametros*)parametros)->listParametro.begin();
 		int posInt = 0;
-		while(pos != ((Parametros*)parametros)->listParametro.end())
+		while(pos != ((Parametros*)parametros)->listParametro.end() && posInt<4)
 		{
 				codigoFuncion += "sw $a"+to_string(posInt++)+", "+((DecVariableStatement*)*pos)->nombre+" \n";;
 		}
 		delete codigoParametro;
+		freeTemp(codigoParametro->temporal);
 	}
+	if(producerStatement != NULL){
 	CodigoGenerado *codigoPocedimiento = new CodigoGenerado();
 	producerStatement->generalCodigo(codigoPocedimiento);
-	codigoFuncion += codigoPocedimiento->codigo;  
-	codigo->codigo += codigoFuncion;
+	codigoFuncion += codigoPocedimiento->codigo;
 	delete codigoPocedimiento;  
+	}
+	codigoFuncion += "jr $ra\n";
+	codigo->codigo += codigoFuncion;
+	  
 }
 
 void Funcion_Statement :: generalCodigo(CodigoGenerado * codigo){
@@ -2494,16 +2530,21 @@ void Funcion_Statement :: generalCodigo(CodigoGenerado * codigo){
 		while(pos != ((Parametros*)parametros)->listParametro.end())
 		{
 			codigoFuncion += "sw $a"+to_string(posInt++)+", "+((DecVariableStatement*)*pos)->nombre+" \n";;
+			pos++;
 		}
 		delete codigoParametro;
 	}
+	if(funcionStatement != NULL){
+	
 	CodigoGenerado *codigoPocedimiento = new CodigoGenerado();
 	funcionStatement->generalCodigo(codigoPocedimiento);
 	codigoFuncion += codigoPocedimiento->codigo;  
+		delete codigoPocedimiento;
+	}
 	codigoFuncion += "jr $ra";
 	codigo->codigo += codigoFuncion;
 
-	delete codigoPocedimiento;  
+  
 }
 
 void CallFuncionStatement :: generalCodigo(CodigoGenerado * codigo){
@@ -2511,13 +2552,14 @@ void CallFuncionStatement :: generalCodigo(CodigoGenerado * codigo){
 	if(parametros != NULL){
 		ExprList::iterator pos = parametros->begin();
 		int posInt = 0;
-		while(pos != parametros->end())
+		while(pos != parametros->end() && posInt < 4)
 		{
 			CodigoGenerado *codigoParametro = new CodigoGenerado();
 				(*pos)->generalCodigo(codigoParametro);
 				codigoFuncion += codigoParametro->codigo;
-			codigoFuncion += "move $a"+to_string(posInt++)+", "+((DecVariableStatement*)*pos)->nombre+" \n";;
+			codigoFuncion += "move $a"+to_string(posInt++)+", "+codigoParametro->temporal+" \n";
 			freeTemp(codigoParametro->temporal);
+		pos++;
 		}
 		
 	}
@@ -2543,7 +2585,7 @@ void Return_Statement :: generalCodigo(CodigoGenerado * codigo){
 void DecVariableStatement:: generalCodigo(CodigoGenerado * codigo){
 		string codigoDec = " ";
 		data += strcat(nombre, ": .word ");
-		if(inicializar){
+		if(inicializar !=NULL){
 			if(inicializar->isA(NUM_EXPR)){
 				data+= to_string(((NumberExpr*)inicializar)->value)+"\n";
 			}else if(CHAR_EXPR) {
@@ -2558,19 +2600,20 @@ void DecVariableStatement:: generalCodigo(CodigoGenerado * codigo){
 			data += "0 \n";
 		}
 		codigo->codigo += codigoDec +"\n";
+		if(multideclatation != NULL)
 		multideclatation->generalCodigo(codigo);
 }
 
 void DecArrayStatement:: generalCodigo(CodigoGenerado * codigo){
 		string codigoDec = " ";
 		data += strcat(nombre, ": .word ");
-		if(inicializar){
+		if(inicializar!=NULL){
 			ExprList::iterator pos = ((ArrayExpr*)inicializar)->value->begin();
 			 while(pos != ((ArrayExpr*)inicializar)->value->end()){
 				if((*pos)->isA(NUM_EXPR))
-					data+= to_string(((NumberExpr*)inicializar)->value);
+					data+= to_string(((NumberExpr*)*pos)->value);
 				else if((*pos)->isA(CHAR_EXPR))
-					data += ((CharExpr*)inicializar)->value;
+					data += ((CharExpr*)*pos)->value;
 				pos++;
 				if(pos != ((ArrayExpr*)inicializar)->value->end())
 					data+=",";
@@ -2580,7 +2623,8 @@ void DecArrayStatement:: generalCodigo(CodigoGenerado * codigo){
 			data += "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 \n";
 		}
 		codigo->codigo += codigoDec +"\n";
-		multideclatation->generalCodigo(codigo);
+		if(multideclatation != NULL)
+			multideclatation->generalCodigo(codigo);
 }
 void PreIncrementoStatement::generalCodigo(CodigoGenerado * codigo){
 	string codigoIncre; 
@@ -2611,7 +2655,7 @@ void PreIncrementoStatement::generalCodigo(CodigoGenerado * codigo){
 	}
 	freeTemp(codigoValor->temporal);
 	freeTemp(TemporalActual);
-	codigo->codigo = codigoIncre ;
+	codigo->codigo += codigoIncre ;
 	
 }
 void PreDecrementoStatement::generalCodigo(CodigoGenerado * codigo){
@@ -2643,7 +2687,7 @@ void PreDecrementoStatement::generalCodigo(CodigoGenerado * codigo){
 
 	freeTemp(codigoValor->temporal);
 	freeTemp(TemporalActual);
-	codigo->codigo = codigoIncre ;
+	codigo->codigo += codigoIncre ;
 	
 }
 
@@ -2676,7 +2720,7 @@ void PosIncrementoStatement::generalCodigo(CodigoGenerado * codigo){
 	}
 	freeTemp(codigoValor->temporal);
 	freeTemp(TemporalActual);
-	codigo->codigo = codigoIncre;
+	codigo->codigo += codigoIncre;
 	
 }
 void PosDecrementoStatement::generalCodigo(CodigoGenerado * codigo){
@@ -2707,6 +2751,6 @@ void PosDecrementoStatement::generalCodigo(CodigoGenerado * codigo){
 	}
 	freeTemp(TemporalActual);
 	freeTemp(codigoValor->temporal);
-	codigo->codigo = codigoIncre ;
+	codigo->codigo += codigoIncre ;
 	
 }

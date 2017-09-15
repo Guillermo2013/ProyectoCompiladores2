@@ -5,6 +5,7 @@
 extern FILE *yyin;
 extern string data;
 char *yyfilename;
+extern Statement* input;
 int yylex();
 int main (int argc , char * argv[]){
  if(argc != 2){
@@ -18,22 +19,24 @@ if(yyin == NULL){
  	fprintf(stderr,"Cannot open file: %s \n",argv[0]);	
 	return 1;
  }	
- Statement *input;
- input = NULL;
+
  yyparse();
-  if (input != 0) {
-    input->ValidateSemantic();
+fclose(yyin);
+  
+   if(input != 0){  
 	CodigoGenerado * codigo = new CodigoGenerado();
+	input->ValidateSemantic();
 	input->generalCodigo(codigo);
-	ofstream fs("main.txt");
+	ofstream fs("/home/guillermo/Desktop/ProyectoCompiladores2/vmipssoc/src/main.S");
 	fs<<data<<endl;
-	fs<< ".text\nmain: \nli $a0, BRIGHT_WHITE\n li $a1, BLACK\njal set_color\n jal clear_screen\n";
+	fs<< ".text\n clean: \nli $a0, BRIGHT_WHITE\n li $a1, BLACK\njal set_color\n jal clear_screen\n jal main\n";
 
 
 	fs<<codigo->codigo<<endl;
 	fs<<"\njr $ra"<<endl;
 	fs.close();
-	
-    }
-fclose(yyin);
+
+}
+   
+
 }

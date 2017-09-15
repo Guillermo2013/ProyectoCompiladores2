@@ -20,7 +20,8 @@ $(EXPR_PARSE_SRC) : expr.y
 	g++ -std=c++11 -c -o $@ $<
 
 run : $(TARGET)
-	./$(TARGET) exemplo.txt 
+	g++ -E  exemplo.cpp > archivo.cpp 
+	./$(TARGET) archivo.cpp 
 clean:
 	rm -f exemploClase.c
 	rm -f $(TARGET)

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdio.h>
 #include "Semantico.h"
+#include <vector>
 
 using namespace std;
 extern int yylineno;
@@ -15,7 +16,10 @@ class CodigoGenerado
   public:
 	string codigo;
 	string temporal;
-	CodigoGenerado(){};
+	CodigoGenerado(){
+		codigo = "";
+		temporal = "";
+	};
 	~CodigoGenerado(){};
 };
 
@@ -339,6 +343,19 @@ public:
 		this->stringtxt = stringtxt; 
     	}
     void ValidateSemantic();
+    void generalCodigo(CodigoGenerado * codigo);
+    
+};
+
+class PrintSoloStatement : public Statement{
+public:
+
+        char * stringtxt;
+	PrintSoloStatement(char * stringtxt) {
+ 
+		this->stringtxt = stringtxt; 
+    	}
+    void ValidateSemantic(){};
     void generalCodigo(CodigoGenerado * codigo);
     
 };
