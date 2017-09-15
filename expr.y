@@ -4,6 +4,7 @@
 %{
 #include <stdio.h>
 #include <string.h>
+#include "ash.h"
 
 #define SZ 32
 int yylex();
@@ -19,6 +20,7 @@ printf("Error : String(%s) Line %d : %s  file: %s   \n",yytext,yylineno,msg,yyfi
 	
 #define YYERROR_VERBOSE 1
 #define YYDEBUG 1
+Statement *input;
 %}
 %glr-parser
 
@@ -55,7 +57,7 @@ printf("Error : String(%s) Line %d : %s  file: %s   \n",yytext,yylineno,msg,yyfi
 
 %%
 
-inputs :opt_eols  inputStatement opt_eols {$2->ValidateSemantic();}  
+inputs :opt_eols  inputStatement opt_eols { input = $2;}  
 ;
 
 statementList:statementList  opt_eols statement %dprec 2 {$$ = $1; ((BlockStatement*)$$)->addStatement($3);}

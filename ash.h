@@ -19,7 +19,7 @@ class CodigoGenerado
 	~CodigoGenerado(){};
 };
 
-enum ExprKind {
+enum ExprTipo {
   LT_EXPR,
   LTE_EXPR,
   GT_EXPR,
@@ -47,7 +47,7 @@ enum ExprKind {
   ASIG_EXPR,
   MASIGULA_EXPR,
   MENOSIGUAL_EXPR,
-  MULTIGUAL_EXPR.
+  MULTIGUAL_EXPR,
   DIVIGUAL_EXPR,
   MODIGUAL_EXPR,
   ORBITIGUAL_EXPR,
@@ -64,6 +64,7 @@ enum ExprKind {
   STRING_EXPR,
   ARRAY_EXPR,
   ARRAYNOMBRE_EXPR,
+  PARAMETROS_EXPR,
   CHAR_EXPR,
   INPUT_EXPR,
   CALL_EXPR
@@ -72,7 +73,7 @@ enum ExprKind {
 class Expr{
 public:
 virtual Tipo* ValidateSemantic() = 0;
-virtual Tipo* generalCodigo(CodigoGenerado * codigo) = 0;
+virtual void generalCodigo(CodigoGenerado * codigo) = 0;
 virtual int getKind() = 0;
 bool isA(int kind) { return (getKind() == kind); }
 
@@ -168,7 +169,7 @@ DEFINE_UNARY_EXPR(Complemento,COMPE_EXPR);
 		void generalCodigo(CodigoGenerado * codigo);\
 }
 
-DEFINE_ASSIGN_EXPR(Asignar,ASIG_EXPR);
+DEFINE_ASSIGN_EXPR(Asignar,ASIG_EXPR);	
 DEFINE_ASSIGN_EXPR(MasIgual,MASIGULA_EXPR);
 DEFINE_ASSIGN_EXPR(MenosIgual,MENOSIGUAL_EXPR);
 DEFINE_ASSIGN_EXPR(MultIgual,MULTIGUAL_EXPR);
@@ -193,6 +194,7 @@ class TernarioExpr:public Expr{
 	Expr *expr2;
 	Tipo* ValidateSemantic();
 	int getKind() { return TERNARIO_EXPR; }
+	void generalCodigo(CodigoGenerado * codigo);
 
 };
 
@@ -204,6 +206,7 @@ class NumberExpr:public Expr{
 	int value;
 	Tipo* ValidateSemantic(){ return new IntTipo();}
 	int getKind() { return NUM_EXPR; }
+	void generalCodigo(CodigoGenerado * codigo);
 };
 class StringExpr:public Expr{
  public:
@@ -213,6 +216,7 @@ class StringExpr:public Expr{
 	char* value;
 	Tipo* ValidateSemantic(){ return new StringTipo();}
 	int getKind() { return STRING_EXPR; }
+	void generalCodigo(CodigoGenerado * codigo);
 };
 class CharExpr:public Expr{
  public:
@@ -222,6 +226,7 @@ class CharExpr:public Expr{
 	char value;
 	Tipo* ValidateSemantic(){ return new CharTipo();}
 	int getKind() { return CHAR_EXPR; }
+	void generalCodigo(CodigoGenerado * codigo);
 };
 
 class ArrayExpr:public Expr{
@@ -233,6 +238,7 @@ class ArrayExpr:public Expr{
 	ExprList *value;
 	Tipo* ValidateSemantic();
 	int getKind() { return ARRAY_EXPR; }
+	void generalCodigo(CodigoGenerado * codigo);
 };
 
 
@@ -248,6 +254,7 @@ class VarNombreExpr:public Expr{
 	}
 	Tipo* ValidateSemantic();
 	int getKind() { return ID_EXPR; }
+	void generalCodigo(CodigoGenerado * codigo);
 };
 class VarNombreArrayExpr:public Expr{
  public:
@@ -261,6 +268,7 @@ class VarNombreArrayExpr:public Expr{
 	}	
 	Tipo* ValidateSemantic();
 	int getKind() { return ARRAYNOMBRE_EXPR; }
+	void generalCodigo(CodigoGenerado * codigo);
 };
 
 class FuncionExpr: public Expr 
@@ -276,12 +284,14 @@ class FuncionExpr: public Expr
 		}
 		Tipo* ValidateSemantic();
 		int getKind() { return CALL_EXPR; }
+		void generalCodigo(CodigoGenerado * codigo);
 
 };
 
 class Statement{
  public: 	
  virtual void ValidateSemantic() = 0;
+ virtual void generalCodigo(CodigoGenerado * codigo) = 0;
 };
 
 class AssignStatement : public Statement{
@@ -303,6 +313,7 @@ class AssignStatement : public Statement{
 	public : \
 		name##Statement(Expr *nombre,Expr *expr1):AssignStatement(nombre,expr1){} \
 		void ValidateSemantic();\
+		void generalCodigo(CodigoGenerado * codigo); \
 	}
 
 DEFINE_ASSIGN_Statement(Asignar);
@@ -322,12 +333,13 @@ DEFINE_ASSIGN_Statement(AsigCorDerIgual);
 class PrintStatement : public Statement{
 public:
 	ExprList  *lista;
-        char * string;
-	PrintStatement(char * string,ExprList  *lista) {
+        char * stringtxt;
+	PrintStatement(char * stringtxt,ExprList  *lista) {
       	 	this->lista = lista; 
-		this->string = string; 
+		this->stringtxt = stringtxt; 
     	}
     void ValidateSemantic();
+    void generalCodigo(CodigoGenerado * codigo);
     
 };
 
@@ -341,6 +353,7 @@ public:
     	}
    
     void ValidateSemantic();
+    void generalCodigo(CodigoGenerado * codigo);
 };
 class If_Statement : public Statement{
 	public: 
@@ -354,6 +367,7 @@ class If_Statement : public Statement{
 		}
 
 		void ValidateSemantic();
+		void generalCodigo(CodigoGenerado * codigo);
 };
 class While_Statement : public Statement{
 	public: 
@@ -366,6 +380,7 @@ class While_Statement : public Statement{
 			
 		}
 		void ValidateSemantic();
+		void generalCodigo(CodigoGenerado * codigo);
 		
 };
 
@@ -381,6 +396,7 @@ class DoWhile_Statement : public Statement{
 		}
 
 		void ValidateSemantic();
+		void generalCodigo(CodigoGenerado * codigo);
 };
 
 class BlockStatement : public Statement
@@ -392,6 +408,7 @@ class BlockStatement : public Statement
 	}
 	list<Statement*> listStatement;
 	void ValidateSemantic();
+	void generalCodigo(CodigoGenerado * codigo);
 };
 
 
@@ -408,6 +425,7 @@ class Producer_Statement: public Statement
 			
 		}
 		void ValidateSemantic();
+		void generalCodigo(CodigoGenerado * codigo);
 		
 };
 
@@ -427,6 +445,7 @@ class For_Statement: public Statement
 			
 		}
 		void ValidateSemantic();
+		void generalCodigo(CodigoGenerado * codigo);
 		
 };
 
@@ -447,6 +466,7 @@ class DecArrayStatement: public Statement
 			this->multideclatation = multideclatation;
 		}
 		void ValidateSemantic();
+		void generalCodigo(CodigoGenerado * codigo);
 };
 
 class DecApuntadorStatement: public Statement 
@@ -464,6 +484,7 @@ class DecApuntadorStatement: public Statement
 		}
 
 		void ValidateSemantic();
+		void generalCodigo(CodigoGenerado * codigo){};
 };
 class DecVariableStatement: public Statement 
 {
@@ -480,6 +501,7 @@ class DecVariableStatement: public Statement
 			this->multideclatation = multideclatation;
 		}
 		void ValidateSemantic();
+		void generalCodigo(CodigoGenerado * codigo);
 		
 };
 class Funcion_Statement: public Statement 
@@ -489,7 +511,7 @@ class Funcion_Statement: public Statement
 		char  * type;
 		char* nombre;
 		Expr * parametros;
-		Statement *funcionStatement;
+		Statement *funcionStatement ;
 		Funcion_Statement(char  * type,char  * nombre,Expr * parametros,Statement *funcionStatement){
 			this->type = type;
 			this->nombre = nombre;
@@ -498,6 +520,7 @@ class Funcion_Statement: public Statement
 			
 		}
 		void ValidateSemantic();
+		void generalCodigo(CodigoGenerado * codigo);
 };
 
 
@@ -511,6 +534,7 @@ class Return_Statement: public Statement
 			
 		}
 		void ValidateSemantic(){};
+		void generalCodigo(CodigoGenerado * codigo);
 	
 };
 
@@ -530,6 +554,7 @@ class CallFuncionStatement: public Statement
 		}
 
 		void ValidateSemantic();
+		void generalCodigo(CodigoGenerado * codigo);
 };
 
 #define DEFINE_Increment_Statement(name) \
@@ -538,6 +563,7 @@ class CallFuncionStatement: public Statement
 		Expr *expr1;\
 		name##Statement(Expr *expr1){this->expr1 = expr1;} \
 		void ValidateSemantic();\
+		void generalCodigo(CodigoGenerado * codigo);\
 	}
 
 
@@ -562,6 +588,8 @@ class Parametro : public Expr
 		}
 
 		Tipo* ValidateSemantic();
+		int getKind() { return PARAMETROS_EXPR; }
+		void generalCodigo(CodigoGenerado * codigo);
 };
 
 class Parametros : public Expr
@@ -573,5 +601,8 @@ class Parametros : public Expr
 	}
 		list<Parametro*> listParametro;
 	Tipo* ValidateSemantic(){return new IntTipo();};
+	int getKind() { return PARAMETROS_EXPR; }
+	void generalCodigo(CodigoGenerado * codigo);
 };
 #endif 
+
