@@ -24,7 +24,7 @@ void ForTest() {
         printf ("i = %d ", i);
     }
 
-    printf("i= %d \n End of loop\n",i);
+    printf(" End of loop\n");
 }
 # 2 "RelOperators.cpp" 2
 
@@ -116,7 +116,7 @@ a[1] -= 10;
 printf("resta %d \n",a[1]);
 a[2] /= 10;
 printf("division %d \n",a[2]);
-
+a[3] *= 1;
 printf("multi %d \n",a[3]);
 a[4] %= 10;
 printf("mod %d \n",a[4]);
@@ -136,7 +136,16 @@ Arimetico();
 
 
 void main(){
+  int rando1;
+  int rando2;
   printf("Hello World!\n");
+  srand(time(0));
+  rando1 = rand();
+  rando2 = rand();
+
+  printf("rando1 = %d !\n",rando1);
+  printf("rando2 = %d !\n",rando2);
  autosuma();
+
 
 }

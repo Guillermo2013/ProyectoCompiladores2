@@ -60,6 +60,7 @@ enum ExprTipo {
   CORIIZIGUAL_EXPR,
   CORIDERIGUAL_EXPR,
   NEGACION_EXPR,
+  RAND_EXPR,
   COMPE_EXPR,
   TERNARIO_EXPR,
   EXPT_EXPR,
@@ -292,6 +293,18 @@ class FuncionExpr: public Expr
 
 };
 
+class RandExpr : public Expr{
+public:
+
+       
+	RandExpr() {}
+    Tipo* ValidateSemantic(){ return new IntTipo();};
+    void generalCodigo(CodigoGenerado * codigo);
+    int getKind() { return RAND_EXPR; }
+	
+    
+};
+
 class Statement{
  public: 	
  virtual void ValidateSemantic() = 0;
@@ -359,19 +372,17 @@ public:
     void generalCodigo(CodigoGenerado * codigo);
     
 };
-
-class ScanfStatement : public Statement{
+class SrandStatement : public Statement{
 public:
-	ExprList  *lista;
-        char * string;
-	ScanfStatement(char * string,ExprList  *lista) {
-      	 	this->lista = lista; 
-		this->string = string; 
-    	}
-   
-    void ValidateSemantic();
+
+       
+    SrandStatement() {  }
+    void ValidateSemantic(){ };
     void generalCodigo(CodigoGenerado * codigo);
+    
 };
+
+
 class If_Statement : public Statement{
 	public: 
 		Expr *expr;

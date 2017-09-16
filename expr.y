@@ -36,9 +36,9 @@ Statement *input = NULL;
 }
 
 %token TK_Op_add TK_Op_sub TK_Op_mul TK_Op_div TK_left_par TK_rigth_par TK_EOL TK_Error TK_EOF TK_ERROR TK_Asignacion TK_Dolar 
-%token TK_NUMERO TK_Print TK_Separador  TK_Igual TK_Distinto TK_Menor TK_Mayor TK_MenorIgual TK_MayorIgual TK_IF TK_Else 
-%token TK_left_llave TK_rigth_llave TK_VarNombre TK_While TK_left_corchete TK_rigth_corchete TK_Refenciacion TK_PuntoComma 
-%token TK_Char TK_Int TK_Void TK_For TK_Scanf TK_String TK_CharLit TK_Modulo TK_Comma TK_AutoAdd TK_AutoSub TK_AutoMul TK_AutoDiv
+%token TK_NUMERO TK_Print TK_Separador  TK_Igual TK_Distinto TK_Menor TK_Mayor TK_MenorIgual TK_MayorIgual TK_IF TK_Else TK_Srand
+%token TK_left_llave TK_rigth_llave TK_VarNombre TK_While TK_left_corchete TK_rigth_corchete TK_Refenciacion TK_PuntoComma TK_Rand
+%token TK_Char TK_Int TK_Void TK_For  TK_String TK_CharLit TK_Modulo TK_Comma TK_AutoAdd TK_AutoSub TK_AutoMul TK_AutoDiv
 %token TK_AsigOrBit TK_AsigCorIzq TK_AsigCorDer TK_Incremento TK_Decremento TK_CorrimientoIzq TK_CorrimientoDer TK_ExclPorBit TK_And TK_Or
 %token TK_OPorBit TK_Interogaccion TK_Negarcion TK_Complemento TK_DosPuntos TK_AsigAndBit TK_AsigXorBit TK_AutoMod TK_Do TK_Return
 
@@ -48,7 +48,7 @@ Statement *input = NULL;
 %type <parametro_t>  parametro
 %type <string_t> TK_VarNombre TK_String Type
 %type <char_t> TK_CharLit
-%type <statement_t> statement assign_statement print_statement if_statement statementList while_statement scanf_statement 
+%type <statement_t> statement assign_statement print_statement if_statement statementList while_statement  
 %type <statement_t>  producce_statement BlockStatementOrStatement for_statement for_assign opAssignStatement  
 %type <statement_t> doWhile_statement declaration_statement funcion_statement callFuncion_statement optionalBlock
 %type <statement_t> statementListFuncion statementFuncion BlockStatementFuncion return_statement declarationList incremente_statement
@@ -75,7 +75,6 @@ inputStatement: declarationList opt_eols statementList %dprec 2 {$$ = $1; ((Bloc
 statement : if_statement %dprec 1 {$$ = $1;}
 	  | while_statement %dprec 2 {$$ = $1;}
 	  | print_statement TK_PuntoComma %dprec 3 {$$ = $1;}
-	  | scanf_statement TK_PuntoComma %dprec 4 {$$ = $1;}	
           | assign_statement TK_PuntoComma %dprec 5 {$$ = $1;}
 	  | producce_statement %dprec 6 {$$ = $1;}
 	  | for_statement %dprec 7 {$$ = $1;}
@@ -83,6 +82,9 @@ statement : if_statement %dprec 1 {$$ = $1;}
 	  | funcion_statement %dprec 9{$$ =$1;}
 	  | callFuncion_statement TK_PuntoComma %dprec 10{$$ = $1;}
 	  | incremente_statement TK_PuntoComma %dprec 11 {$$ = $1;}
+	  | TK_Srand TK_PuntoComma %dprec 12 {$$ = new SrandStatement();}
+	  
+	  
 ;
 
 
@@ -170,13 +172,13 @@ statementListFuncion:statementListFuncion  opt_eols statementFuncion %dprec 2 {$
 
 statementFuncion : if_statement {$$ = $1;}
 	  | while_statement {$$ = $1;}
-	  | print_statement TK_PuntoComma {$$ = $1;}
-	  | scanf_statement TK_PuntoComma {$$ = $1;}	 
+	  | print_statement TK_PuntoComma {$$ = $1;}	 
           | assign_statement TK_PuntoComma {$$ = $1;}
 	  | for_statement {$$ = $1;}
 	  | doWhile_statement TK_PuntoComma {$$ = $1;}
 	  | callFuncion_statement TK_PuntoComma{$$ = $1;}
 	  | return_statement TK_PuntoComma {$$ = $1;}
+	  | TK_Srand TK_PuntoComma %dprec 12 {$$ = new SrandStatement();}
 	  
 ;
 
@@ -222,9 +224,6 @@ print_statement : TK_Print TK_left_par TK_String TK_Comma arg_list TK_rigth_par 
 		
 ;
 
-scanf_statement :TK_Scanf TK_left_par TK_String TK_Comma arg_list TK_rigth_par %dprec 1 { $$ = new ScanfStatement($3,$5);}
-		|TK_Scanf TK_left_par TK_String TK_rigth_par %dprec 1 { $$ = new ScanfStatement($3,NULL);}		
-;
 
 
 arg_list: arg_list TK_Comma expr %dprec 2 { $$ = $1;$$->push_back($3); }
@@ -365,5 +364,6 @@ factor: TK_VarNombre {  $$ = new VarNombreExpr($1);}
        | TK_NUMERO { $$ = new NumberExpr($1);}
        | TK_CharLit { $$ = new CharExpr($1);}
        | TK_VarNombre TK_left_corchete  expr TK_rigth_corchete {$$  = new VarNombreArrayExpr($1,$3);}
-       | TK_left_par expr TK_rigth_par { $$ = $2;}      
+       | TK_left_par expr TK_rigth_par { $$ = $2;}  
+       | TK_Rand   {$$ = new RandExpr();}    
 ;

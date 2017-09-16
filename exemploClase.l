@@ -65,10 +65,11 @@ int  validateChar();
 "if"    { return TK_IF;}
 "else"  { return TK_Else;}
 "printf" { return TK_Print;}
-"scanf" { return TK_Scanf;}
 "return" { return TK_Return;}
 "while" { return TK_While;}
 "do" { return TK_Do;}
+"srand(time(0))" { return TK_Srand;}
+"rand()" { return TK_Rand;}
 \"      { BEGIN(stringState);}
 \'      { BEGIN(charState);}
 "0x"[0-9a-fA-F]+ { yylval.int_t =(int)strtol(yytext, NULL, 16); return TK_NUMERO;}

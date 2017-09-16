@@ -152,8 +152,8 @@ IMPLEMENT_BINARY_COMP_SEMANTIC(MenorIgual);
 #define IMPLEMENT_BINARY_EXPR_SEMANTIC(name) \
 	Tipo* name##Expr::ValidateSemantic(){ \
 		Tipo * valor = expr1->ValidateSemantic();\
-	if(valor->isA(arrayTipo) || expr1->ValidateSemantic()->isA(arrayTipo)||\
-		valor->isA(procedimientoTipo) || expr1->ValidateSemantic()->isA(procedimientoTipo)){\
+	if(valor->isA(arrayTipo) || expr2->ValidateSemantic()->isA(arrayTipo)||\
+		valor->isA(procedimientoTipo) || expr2->ValidateSemantic()->isA(procedimientoTipo)){\
 		cout<< "Error : no se puede realizar operaciones con arreglos o con funciones void linea "<< yylineno <<  endl;\
 		exit(0);\
 	}\
@@ -172,16 +172,27 @@ IMPLEMENT_BINARY_EXPR_SEMANTIC(CorrimientoDer);
 IMPLEMENT_BINARY_EXPR_SEMANTIC(OPorBit);
 IMPLEMENT_BINARY_EXPR_SEMANTIC(ExclPorBit);
 IMPLEMENT_BINARY_EXPR_SEMANTIC(YPorBit);
-IMPLEMENT_BINARY_EXPR_SEMANTIC(MasIgual);
-IMPLEMENT_BINARY_EXPR_SEMANTIC(MenosIgual);
-IMPLEMENT_BINARY_EXPR_SEMANTIC(MultIgual);
-IMPLEMENT_BINARY_EXPR_SEMANTIC(DivIgual);
-IMPLEMENT_BINARY_EXPR_SEMANTIC(ModIgual);
-IMPLEMENT_BINARY_EXPR_SEMANTIC(OrBitIgual);
-IMPLEMENT_BINARY_EXPR_SEMANTIC(AndBitIgual);
-IMPLEMENT_BINARY_EXPR_SEMANTIC(XorBitIgual);
-IMPLEMENT_BINARY_EXPR_SEMANTIC(AsigCorIzqIgual);
-IMPLEMENT_BINARY_EXPR_SEMANTIC(AsigCorDerIgual);
+
+#define IMPLEMENT_BINARY_EXPR_SEMANTIC2(name) \
+	Tipo* name##Expr::ValidateSemantic(){ \
+		Tipo * valor = nombre->ValidateSemantic();\
+	if(valor->isA(arrayTipo) || expr1->ValidateSemantic()->isA(arrayTipo)||\
+		valor->isA(procedimientoTipo) || expr1->ValidateSemantic()->isA(procedimientoTipo)){\
+		cout<< "Error : no se puede realizar operaciones con arreglos o con funciones void linea "<< yylineno <<  endl;\
+		exit(0);\
+	}\
+	return valor; \
+}
+IMPLEMENT_BINARY_EXPR_SEMANTIC2(MasIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC2(MenosIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC2(MultIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC2(DivIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC2(ModIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC2(OrBitIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC2(AndBitIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC2(XorBitIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC2(AsigCorIzqIgual);
+IMPLEMENT_BINARY_EXPR_SEMANTIC2(AsigCorDerIgual);
 
 
 Tipo* DesferenciaExpr :: ValidateSemantic(){
@@ -281,7 +292,6 @@ void name##Statement :: ValidateSemantic(){\
 		}\
 }
 IMPLEMENT_INOUT_STATEMENT_SEMANTIC(Print);
-IMPLEMENT_INOUT_STATEMENT_SEMANTIC(Scanf);
 
 void If_Statement :: ValidateSemantic(){
 	if( expr->ValidateSemantic()->isA(arrayTipo)||  expr->ValidateSemantic()->isA(procedimientoTipo)){
@@ -697,6 +707,17 @@ void CharExpr:: generalCodigo(CodigoGenerado * codigo)
 	string TemporalActual = NewTemp();
 	codigo->codigo = "li " + TemporalActual + ", " + value +"\n";
 		codigo->temporal = TemporalActual;
+
+}
+
+void RandExpr:: generalCodigo(CodigoGenerado * codigo)
+{
+	string codigoCall;
+	string TemporalActual = NewTemp();
+	codigoCall += "jal rand \n";
+	codigoCall += "move "+TemporalActual+ ", "+"$v0 \n";
+	codigo->codigo = codigoCall;
+	codigo->temporal = TemporalActual;
 
 }
 void FuncionExpr:: generalCodigo(CodigoGenerado * codigo)
@@ -1468,25 +1489,7 @@ void NegacionExpr ::generalCodigo(CodigoGenerado * codigo){
 }
 
 
-void ScanfStatement::generalCodigo(CodigoGenerado * codigo){
-	
-	/*
-	data += " msg"+to_string(cantidadMsg)+":.asciz \""+string+"\" \n";
-	string codigoInput;
-	string TemporalActual = NewTemp();
-	
-	codigoInput ="la "+TemporalActual+", msg"+to_string(cantidadMsg++)+"\n";
-	codigoInput += "move $a0, "+TemporalActual+"\n jal puts\n";
-	codigoInput += ".get_key_loop"+to_string(cantidadInput)+": \n"; 
-	codigoInput += "jal keypad_getkey \n";
-	codigoInput += "beqz $v0, .get_key_loop"+to_string(cantidadInput++)+"\n";
-	codigoInput += "move "+ TemporalActual +", $v0 \n";
-	
-		codigo->codigo = codigoInput;
-	codigo->temporal = TemporalActual;
-	*/
-		
-}
+
 
 void AsignarExpr::generalCodigo(CodigoGenerado * codigo){
 	
@@ -2291,6 +2294,22 @@ void AsignarStatement::generalCodigo(CodigoGenerado * codigo){
 	freeTemp(codigo1->temporal);
 	codigo->codigo += codigoAssign;
 	delete codigo1;
+}
+
+
+
+
+void SrandStatement::generalCodigo(CodigoGenerado * codigo){
+	
+
+	string codigoCall;
+		string TemporalActual = NewTemp();
+		codigoCall = "li "+TemporalActual +", MS_COUNTER_REG_ADDR \n";		
+		codigoCall += "move $a0, "+TemporalActual +"\n";
+		codigoCall += "jal rand_seed \n";
+		freeTemp(TemporalActual);
+		codigo->codigo += codigoCall;
+	
 }
 void BlockStatement::generalCodigo(CodigoGenerado * codigo){
 	
