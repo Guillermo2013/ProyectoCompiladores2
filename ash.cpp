@@ -35,6 +35,7 @@ int cantidadOr =0;
 int cantidadAnd = 0;
 int cantidadternario = 0;
 int cantidadNegacion = 0;
+int cantidadFunciones = 0;
 bool enFuncion = false;
 int sp_val = 4;
 string salvar = " ";
@@ -2558,7 +2559,7 @@ void Producer_Statement :: generalCodigo(CodigoGenerado * codigo){
 	//codigoFuncion += antes+" -" +to_string(sp_val)+"\n" + guardar;
 	codigoFuncion += codigoPocedimiento->codigo;
 	//codigoFuncion += salvar+ antes +to_string(sp_val)+"\n";
-	codigoFuncion += "lw $ra, ($sp)\n addi $sp, $sp, 4\n";
+	codigoFuncion += ".epilogo"+to_string(cantidadFunciones++)+":\n lw $ra, ($sp)\n addi $sp, $sp, 4\n";
 	delete codigoPocedimiento;  
 	/*enFuncion = false;
 		guardar = " ";
@@ -2614,7 +2615,7 @@ void Funcion_Statement :: generalCodigo(CodigoGenerado * codigo){
 	guardar = " ";
 	salvar = " ";
 	sp_val = 4;
-*/	codigoFuncion += "lw $ra, ($sp)\n addi $sp, $sp, 4\n";
+*/	codigoFuncion += ".epilogo"+to_string(cantidadFunciones++)+":\n lw $ra, ($sp)\n addi $sp, $sp, 4\n";
 	}
 	codigoFuncion += "jr $ra\n";
 
@@ -2654,10 +2655,10 @@ void Return_Statement :: generalCodigo(CodigoGenerado * codigo){
 		codigoRetorno += "move $v0 ,"+codigoReturn->temporal+"\n";
 		freeTemp(codigoReturn->temporal);
 	}
-	string antes = "addi $sp, $sp,";
+
 	
 		
-	codigoRetorno += "jr $ra \n";
+	codigoRetorno += "j .epilogo"+to_string(cantidadFunciones)+" \n";
 	codigo->codigo += codigoRetorno;
 }
 

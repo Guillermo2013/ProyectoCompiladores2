@@ -156,7 +156,29 @@ printf("corrimiento de %d \n",array[9]);
 
 
 void main(){
-# 58 "exemplo.cpp"
+
+
+  int rando1;
+  int rando2;
+  int x4, y4, z,a2,b2;
+
+  printf("Hello World!\n");
+  srand(time(0));
+  rando1 = rand();
+  rando2 = rand();
+
+  printf("rando1 = %d !\n",rando1);
+  printf("rando2 = %d !\n",rando2);
+
+    a2 = 100;
+    b2 = 21;
+
+    x4 = a2;
+    y4 = b2;
+    z = gcd(x4, y4);
+
+    printf("GCD(%d, %d) = %d\n", a2, b2, z);
+
 Arimetico();
 WhileTest();
 ForTest();

@@ -33,10 +33,10 @@ printf("corrimiento de %d \n",array[9]);
 
 void main(){
 
-/*
+
   int rando1;
   int rando2;
-  int x, y, z,a,b;
+  int x4, y4, z,a2,b2;
 
   printf("Hello World!\n");
   srand(time(0));	
@@ -46,15 +46,15 @@ void main(){
   printf("rando1 = %d !\n",rando1);
   printf("rando2 = %d !\n",rando2);
  
-    a = 10;
-    b = 20;
+    a2 = 100;
+    b2 = 21;
     
-    x = a;
-    y = b;
-    z = gcd(x, y);
+    x4 = a2;
+    y4 = b2;
+    z = gcd(x4, y4);
 
-    printf("GCD(%d, %d) = %d\n", a, b, z);
-*/
+    printf("GCD(%d, %d) = %d\n", a2, b2, z);
+
 Arimetico();
 WhileTest();
 ForTest();

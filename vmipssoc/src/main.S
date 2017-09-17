@@ -80,6 +80,22 @@ mod: .word 0
  msg61:.asciz " \n" 
  msg62:.asciz "corrimiento de " 
  msg63:.asciz " \n" 
+rando1: .word 0 
+rando2: .word 0 
+x4: .word 0 
+y4: .word 0 
+z: .word 0 
+a2: .word 0 
+b2: .word 0 
+ msg64:.asciz "Hello World!\n" 
+ msg65:.asciz "rando1 = " 
+ msg66:.asciz " !\n" 
+ msg67:.asciz "rando2 = " 
+ msg68:.asciz " !\n" 
+ msg69:.asciz "GCD(" 
+ msg70:.asciz ", " 
+ msg71:.asciz ") = " 
+ msg72:.asciz "\n" 
 
 .text
  clean: 
@@ -178,7 +194,8 @@ jal put_udecimal
 la $t0, msg12
 move $a0, $t0
 jal puts
-lw $ra, ($sp)
+.epilogo0:
+ lw $ra, ($sp)
  addi $sp, $sp, 4
 jr $ra
 WhileTest: 
@@ -233,7 +250,8 @@ jal put_udecimal
 la $t0, msg17
 move $a0, $t0
 jal puts
-lw $ra, ($sp)
+.epilogo1:
+ lw $ra, ($sp)
  addi $sp, $sp, 4
 jr $ra
 IfTest: 
@@ -306,7 +324,8 @@ move $a0, $t0
 jal puts
 	 j .endif0 
 .endif0: 
-lw $ra, ($sp)
+.epilogo2:
+ lw $ra, ($sp)
  addi $sp, $sp, 4
 jr $ra
 Relacionales: 
@@ -434,7 +453,8 @@ jal put_udecimal
 la $t0, msg42
 move $a0, $t0
 jal puts
-lw $ra, ($sp)
+.epilogo3:
+ lw $ra, ($sp)
  addi $sp, $sp, 4
 jr $ra
 ForTest: 
@@ -473,7 +493,8 @@ sw $t2, i
 la $t2, msg45
 move $a0, $t2
 jal puts
-lw $ra, ($sp)
+.epilogo4:
+ lw $ra, ($sp)
  addi $sp, $sp, 4
 jr $ra
 
@@ -496,7 +517,7 @@ finEQ2:
 	 beqz $t3, .else1 
 lw $t4, a
  move $v0 ,$t4
-jr $ra 
+j .epilogo5 
 	 j .endif1 
 .else1:
 lw $t3, a
@@ -513,10 +534,11 @@ move $a1, $t3
 jal gcd 
 move $t3, $v0
  move $v0 ,$t3
-jr $ra 
+j .epilogo5 
 	 j .endif1 
 .endif1: 
-lw $ra, ($sp)
+.epilogo5:
+ lw $ra, ($sp)
  addi $sp, $sp, 4
 jr $ra
 autosuma: 
@@ -718,19 +740,94 @@ jal put_udecimal
 la $t3, msg63
 move $a0, $t3
 jal puts
-lw $ra, ($sp)
+.epilogo6:
+ lw $ra, ($sp)
  addi $sp, $sp, 4
 jr $ra
 main: 
 addi $sp, $sp, -4
  sw $ra, ($sp)
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+la $t3, msg64
+move $a0, $t3
+jal puts
+li $t4, MS_COUNTER_REG_ADDR 
+move $a0, $t4
+jal rand_seed 
+jal rand 
+move $t4, $v0 
+sw $t4, rando1
+jal rand 
+move $t4, $v0 
+sw $t4, rando2
+la $t4, msg65
+move $a0, $t4
+jal puts
+lw $t4, rando1
+move $a0, $t4
+jal put_udecimal
+la $t4, msg66
+move $a0, $t4
+jal puts
+la $t4, msg67
+move $a0, $t4
+jal puts
+lw $t4, rando2
+move $a0, $t4
+jal put_udecimal
+la $t4, msg68
+move $a0, $t4
+jal puts
+li $t4, 100
+sw $t4, a2
+li $t4, 21
+sw $t4, b2
+lw $t4, a2
+sw $t4, x4
+lw $t4, b2
+sw $t4, y4
+ lw $t4, x4
+move $a0, $t4 
+lw $t4, y4
+move $a1, $t4 
+jal gcd 
+move $t4, $v0
+sw $t4, z
+la $t4, msg69
+move $a0, $t4
+jal puts
+lw $t4, a2
+move $a0, $t4
+jal put_udecimal
+la $t4, msg70
+move $a0, $t4
+jal puts
+lw $t4, b2
+move $a0, $t4
+jal put_udecimal
+la $t4, msg71
+move $a0, $t4
+jal puts
+lw $t4, z
+move $a0, $t4
+jal put_udecimal
+la $t4, msg72
+move $a0, $t4
+jal puts
  jal Arimetico 
  jal WhileTest 
  jal ForTest 
  jal autosuma 
  jal IfTest 
  jal Relacionales 
-lw $ra, ($sp)
+.epilogo7:
+ lw $ra, ($sp)
  addi $sp, $sp, 4
 jr $ra
 
