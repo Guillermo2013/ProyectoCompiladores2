@@ -1,4 +1,4 @@
-#include "ForTest.cpp"
+
 
 void Relacionales() {
     int x2, y2;
@@ -26,5 +26,5 @@ void Relacionales() {
 
     // Equal
     printf("(x == y: %d)\n ", x2 == y2);
-ForTest();
+
 }

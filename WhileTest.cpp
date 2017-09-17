@@ -1,4 +1,4 @@
-#include "IfTest.cpp"
+
 void WhileTest() {
     int total;
     int count;
@@ -15,5 +15,5 @@ void WhileTest() {
         total = total + number;
     }
     printf ("The total is %d\n", total);
-  IfTest();
+ 
 }

@@ -1,4 +1,4 @@
-#include "RelOperators.cpp"
+
 void IfTest() {
     int x1, y1;
     
@@ -12,5 +12,5 @@ void IfTest() {
         printf ("X %d is equal to Y %d \n",x1,y1);
     else
         printf ("X %d is no equal to Y %d \n",x1,y1);
-    Relacionales();
+    
 }

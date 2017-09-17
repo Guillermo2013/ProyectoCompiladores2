@@ -138,7 +138,7 @@ producce_statement : TK_Void TK_VarNombre TK_left_par optparametroList TK_rigth_
 ;
 
 optparametroList : parametroList %dprec 2 { $$ = $1;}
-		 | %dprec 1 {$$ = NULL;}
+		 | %dprec 1 {$$ = new Parametros();}
 ;
 parametroList:parametroList TK_Comma parametro %dprec 2 {$$ = $1; ((Parametros*)$$)->addParametro($3);}
 	     |parametro %dprec 1 { $$ = new Parametros();((Parametros*)$$)->addParametro($1);}
@@ -170,16 +170,18 @@ statementListFuncion:statementListFuncion  opt_eols statementFuncion %dprec 2 {$
 	            |statementFuncion %dprec 1{ $$ = new BlockStatement(); ((BlockStatement*)$$)->addStatement($1);}
 ;
 
-statementFuncion : if_statement {$$ = $1;}
-	  | while_statement {$$ = $1;}
-	  | print_statement TK_PuntoComma {$$ = $1;}	 
-          | assign_statement TK_PuntoComma {$$ = $1;}
-	  | for_statement {$$ = $1;}
-	  | doWhile_statement TK_PuntoComma {$$ = $1;}
-	  | callFuncion_statement TK_PuntoComma{$$ = $1;}
-	  | return_statement TK_PuntoComma {$$ = $1;}
+statementFuncion : if_statement %dprec 1 {$$ = $1;}
+	  | while_statement %dprec 2 {$$ = $1;}
+	  | print_statement TK_PuntoComma %dprec 3 {$$ = $1;}
+          | assign_statement TK_PuntoComma %dprec 5 {$$ = $1;}
+	  | producce_statement %dprec 6 {$$ = $1;}
+	  | for_statement %dprec 7 {$$ = $1;}
+	  | doWhile_statement TK_PuntoComma %dprec 8 {$$ = $1;}
+	  | callFuncion_statement TK_PuntoComma %dprec 10{$$ = $1;}
+	  | incremente_statement TK_PuntoComma %dprec 11 {$$ = $1;}
 	  | TK_Srand TK_PuntoComma %dprec 12 {$$ = new SrandStatement();}
-	  
+	   | return_statement TK_PuntoComma %dprec 13 {$$ = $1;}
+	 
 ;
 
 
@@ -213,8 +215,8 @@ while_statement : TK_While TK_left_par expr TK_rigth_par opt_eols BlockStatement
 doWhile_statement  : TK_Do opt_eols BlockStatementOrStatement opt_eols TK_While TK_left_par expr TK_rigth_par  {$$ = new DoWhile_Statement($7,$3);}
 ;
 
-BlockStatementOrStatement: statement %dprec 1 { $$ = new BlockStatement(); ((BlockStatement*)$$)->addStatement($1);}
-			 |  TK_left_llave opt_eols statementList opt_eols TK_rigth_llave %dprec 2 { $$ = $3;}	
+BlockStatementOrStatement: statementFuncion %dprec 1 { $$ = new BlockStatement(); ((BlockStatement*)$$)->addStatement($1);}
+			 |  TK_left_llave opt_eols inputStatementFuncion opt_eols TK_rigth_llave %dprec 2 { $$ = $3;}	
 ;
  
 

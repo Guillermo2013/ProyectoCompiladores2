@@ -1,5 +1,5 @@
 
-#include "WhileTest.cpp"
+
 
 void Arimetico(){ 
 int x, y;
@@ -14,5 +14,5 @@ int x, y;
     printf("Mul %d\n", x * y);
     printf("Div %d\n", x / y);
     printf("Mod %d\n", x % y);
-    WhileTest();
+   
 }

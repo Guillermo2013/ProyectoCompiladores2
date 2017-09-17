@@ -35,6 +35,10 @@ int cantidadOr =0;
 int cantidadAnd = 0;
 int cantidadternario = 0;
 int cantidadNegacion = 0;
+bool enFuncion = false;
+int sp_val = 4;
+string salvar = " ";
+string guardar = " ";
 string data="#include \"screen.h\"\n #include \"system.h\"\n.global clean\n.data\n";
 
 
@@ -43,6 +47,8 @@ string NewTemp() {
 		while (it!=TemporalesMaps.end()){
 				if(!it->second) {
 						TemporalesMaps[it->first] = true;
+						if(it->first.empty())
+							return NewTemp();
 						return it->first;
 				}
 	it++;
@@ -578,13 +584,13 @@ Tipo* FuncionExpr :: ValidateSemantic(){
 			 cout<< "Error : no existe la funcion  "<< nombre <<" linea" <<yylineno << endl;
 				exit(0);
 		 }
-		if(parametros == NULL && ((FuncionTipo*)tipo)->parametros != NULL){
-			 cout<< "Error : demasiados parametros en la funcion "<< nombre <<" linea " <<yylineno << endl;
+		/*if(parametros == NULL && ((FuncionTipo*)tipo)->parametros != NULL){
+			 cout<< "Error :  parametros en la funcion "<< nombre <<" linea " <<yylineno << endl;
 				exit(0);
 		}else if(parametros->size() != ((FuncionTipo*)tipo)->parametros->size()){
-			 cout<< "Error : demasiados parametros en la funcion a "<< nombre <<" linea " <<yylineno << endl;
+			 cout<< "Error : demasiados o faltan parametros en la funcion a "<< nombre <<" linea " <<yylineno << endl;
 				exit(0);
-		}
+		}else if(parametros->size()>0){
 		list<Expr*>::iterator itExpr = parametros->begin();
 		list<Tipo*>::iterator itTipo =  ((FuncionTipo*)tipo)->parametros->begin();
 		while(itExpr != parametros->end() && itTipo != ((FuncionTipo*)tipo)->parametros->end()){
@@ -604,7 +610,7 @@ Tipo* FuncionExpr :: ValidateSemantic(){
 			itExpr++;
 			itTipo++;
 		}
-
+	}*/
 	return ((FuncionTipo*)tipo)->retorno;
 }
 void CallFuncionStatement :: ValidateSemantic(){
@@ -624,17 +630,15 @@ void CallFuncionStatement :: ValidateSemantic(){
 		 }
 		 it++;
 		}
-		 if(exite == false){
+		/* if(exite == false){
 			 cout<< "Error : no existe la funcion  "<< nombre <<" linea" <<yylineno << endl;
 				exit(0);
 		 }
-    /*	cout<<parametros->size()<<endl;
-    cout<<((FuncionTipo*)tipo)->parametros->size()<<endl;
-		if(parametros == NULL && ((FuncionTipo*)tipo)->parametros != NULL){
-			 cout<< "Error : demasiados parametros en la funcion "<< nombre <<" linea " <<yylineno << endl;
+         if(parametros == NULL && ((FuncionTipo*)tipo)->parametros != NULL){
+			 cout<< "Error :  parametros en la funcion "<< nombre <<" linea " <<yylineno << endl;
 				exit(0);
 		}else if(parametros->size() != ((FuncionTipo*)tipo)->parametros->size()){
-			 cout<< "Error : demasiados parametros en la funcion a "<< nombre <<" linea " <<yylineno << endl;
+			 cout<< "Error : demasiados o faltan parametros en la funcion a "<< nombre <<" linea " <<yylineno << endl;
 				exit(0);
 		}else if(parametros->size()>0){
 		list<Expr*>::iterator itExpr = parametros->begin();
@@ -733,13 +737,15 @@ void FuncionExpr:: generalCodigo(CodigoGenerado * codigo)
 			CodigoGenerado *codigoParametro = new CodigoGenerado();
 				(*pos)->generalCodigo(codigoParametro);
 				codigoFuncion += codigoParametro->codigo;
-			codigoFuncion += "move $a"+to_string(posInt++)+", "+((DecVariableStatement*)*pos)->nombre+" \n";;
+			codigoFuncion += "move $a"+to_string(posInt++)+", ";
+			codigoFuncion += codigoParametro->temporal+" \n";
 			freeTemp(codigoParametro->temporal);
+			pos++;
 		}
 		
 	}
 	codigoFuncion += "jal ";
-	codigoFuncion += strcat(nombre ," \n");
+	codigoFuncion += string(nombre) +" \n";
 	string TemporalActual = NewTemp();
  codigoFuncion += "move "+TemporalActual+", $v0\n";
 	codigo->codigo += codigoFuncion;
@@ -2515,24 +2521,49 @@ void DoWhile_Statement::generalCodigo(CodigoGenerado * codigo){
 	
 }
 void Producer_Statement :: generalCodigo(CodigoGenerado * codigo){
-	string codigoFuncion =strcat(nombre, ": \n");   
+	string codigoFuncion =string(nombre)+ ": \n";   
 	if(parametros != NULL){
 		CodigoGenerado *codigoParametro = new CodigoGenerado();
 		parametros->generalCodigo(codigoParametro);
 		list<Parametro*>::iterator pos = ((Parametros*)parametros)->listParametro.begin();
 		int posInt = 0;
-		while(pos != ((Parametros*)parametros)->listParametro.end() && posInt<4)
+		while(pos != ((Parametros*)parametros)->listParametro.end() )
 		{
-				codigoFuncion += "sw $a"+to_string(posInt++)+", "+((DecVariableStatement*)*pos)->nombre+" \n";;
+				
+			data += string(((DecVariableStatement*)(*pos)->declaracion)->nombre) +":.word 0 \n";
+			codigoFuncion += "sw $a"+to_string(posInt++)+", "+((DecVariableStatement*)(*pos)->declaracion)->nombre+" \n";
+		/*	string TemporalActual = NewTemp();
+			guardar += "lw "+TemporalActual+", "+((DecVariableStatement*)(*pos)->declaracion)->nombre+"\n";
+			guardar += "sw "+TemporalActual+", "+to_string(sp_val)+"($sp)\n";
+      
+      salvar +=  "lw "+TemporalActual+", "+to_string(sp_val)+"($sp)\n";
+      salvar += "sw "+TemporalActual+", "+((DecVariableStatement*)(*pos)->declaracion)->nombre+"\n";
+      freeTemp(TemporalActual);
+			sp_val += 4;*/
+			pos++;
 		}
 		delete codigoParametro;
 		freeTemp(codigoParametro->temporal);
 	}
 	if(producerStatement != NULL){
+		/*enFuncion = true;
+   
+	string antes = "addi $sp, $sp,";
+	guardar += "sw $ra, ($sp)\n";
+	salvar += "lw $ra, ($sp)\n";*/
+		codigoFuncion += "addi $sp, $sp, -4\n sw $ra, ($sp)\n";	
+	
 	CodigoGenerado *codigoPocedimiento = new CodigoGenerado();
 	producerStatement->generalCodigo(codigoPocedimiento);
+	//codigoFuncion += antes+" -" +to_string(sp_val)+"\n" + guardar;
 	codigoFuncion += codigoPocedimiento->codigo;
+	//codigoFuncion += salvar+ antes +to_string(sp_val)+"\n";
+	codigoFuncion += "lw $ra, ($sp)\n addi $sp, $sp, 4\n";
 	delete codigoPocedimiento;  
+	/*enFuncion = false;
+		guardar = " ";
+	salvar = " ";
+	sp_val = 0;*/
 	}
 	codigoFuncion += "jr $ra\n";
 	codigo->codigo += codigoFuncion;
@@ -2540,7 +2571,7 @@ void Producer_Statement :: generalCodigo(CodigoGenerado * codigo){
 }
 
 void Funcion_Statement :: generalCodigo(CodigoGenerado * codigo){
-	string codigoFuncion =strcat(nombre, ": \n");     
+	string codigoFuncion ="\n\n"+string(nombre)+ ": \n";     
 	if(parametros != NULL){
 		CodigoGenerado *codigoParametro = new CodigoGenerado();
 		parametros->generalCodigo(codigoParametro);
@@ -2548,21 +2579,46 @@ void Funcion_Statement :: generalCodigo(CodigoGenerado * codigo){
 		int posInt = 0;
 		while(pos != ((Parametros*)parametros)->listParametro.end())
 		{
-			codigoFuncion += "sw $a"+to_string(posInt++)+", "+((DecVariableStatement*)*pos)->nombre+" \n";;
+			data += string(((DecVariableStatement*)(*pos)->declaracion)->nombre) +":.word 0 \n";
+			codigoFuncion += "sw $a"+to_string(posInt++)+", "+((DecVariableStatement*)(*pos)->declaracion)->nombre+" \n";
+        /*
+ 			string TemporalActual = NewTemp();
+			guardar += "lw "+TemporalActual+", "+((DecVariableStatement*)(*pos)->declaracion)->nombre+"\n";
+			guardar += "sw "+TemporalActual+", "+to_string(sp_val)+"($sp)\n";
+      
+      salvar +=  "lw "+TemporalActual+", "+to_string(sp_val)+"($sp)\n";
+      salvar += "sw "+TemporalActual+", "+((DecVariableStatement*)(*pos)->declaracion)->nombre+"\n";
+      freeTemp(TemporalActual);
+			sp_val += 4;*/
 			pos++;
+
 		}
 		delete codigoParametro;
 	}
 	if(funcionStatement != NULL){
+    /*string antes ="";
+	enFuncion = true;
+	antes = "addi $sp, $sp,";
+	guardar += "sw $ra, ($sp)\n";
+	salvar += "lw $ra, ($sp)\n";
+ */codigoFuncion += "addi $sp, $sp, -4\n sw $ra, ($sp)\n";	
 	
 	CodigoGenerado *codigoPocedimiento = new CodigoGenerado();
 	funcionStatement->generalCodigo(codigoPocedimiento);
-	codigoFuncion += codigoPocedimiento->codigo;  
-		delete codigoPocedimiento;
-	}
-	codigoFuncion += "jr $ra";
-	codigo->codigo += codigoFuncion;
+	//codigoFuncion += antes+" -" +to_string(sp_val)+"\n" + guardar;
+	codigoFuncion += codigoPocedimiento->codigo;
+	//codigoFuncion += salvar+ antes +to_string(sp_val)+"\n";
 
+		delete codigoPocedimiento;
+	/*enFuncion = false;
+	guardar = " ";
+	salvar = " ";
+	sp_val = 4;
+*/	codigoFuncion += "lw $ra, ($sp)\n addi $sp, $sp, 4\n";
+	}
+	codigoFuncion += "jr $ra\n";
+
+	codigo->codigo += codigoFuncion;
   
 }
 
@@ -2571,11 +2627,12 @@ void CallFuncionStatement :: generalCodigo(CodigoGenerado * codigo){
 	if(parametros != NULL){
 		ExprList::iterator pos = parametros->begin();
 		int posInt = 0;
-		while(pos != parametros->end() && posInt < 4)
+		while(pos != parametros->end() )
 		{
 			CodigoGenerado *codigoParametro = new CodigoGenerado();
 				(*pos)->generalCodigo(codigoParametro);
 				codigoFuncion += codigoParametro->codigo;
+
 			codigoFuncion += "move $a"+to_string(posInt++)+", "+codigoParametro->temporal+" \n";
 			freeTemp(codigoParametro->temporal);
 		pos++;
@@ -2583,7 +2640,7 @@ void CallFuncionStatement :: generalCodigo(CodigoGenerado * codigo){
 		
 	}
 	codigoFuncion += "jal ";
-	codigoFuncion += strcat(nombre ," \n");
+	codigoFuncion +=string(nombre)+ " \n";
 	codigo->codigo += codigoFuncion;  
 
 }
@@ -2593,9 +2650,13 @@ void Return_Statement :: generalCodigo(CodigoGenerado * codigo){
 	if(returnExpr != NULL){
 		CodigoGenerado *codigoReturn = new CodigoGenerado();
 		returnExpr->generalCodigo(codigoReturn);
+		codigo->codigo += codigoReturn->codigo;
 		codigoRetorno += "move $v0 ,"+codigoReturn->temporal+"\n";
 		freeTemp(codigoReturn->temporal);
 	}
+	string antes = "addi $sp, $sp,";
+	
+		
 	codigoRetorno += "jr $ra \n";
 	codigo->codigo += codigoRetorno;
 }
@@ -2603,29 +2664,45 @@ void Return_Statement :: generalCodigo(CodigoGenerado * codigo){
 
 void DecVariableStatement:: generalCodigo(CodigoGenerado * codigo){
 		string codigoDec = " ";
-		data += strcat(nombre, ": .word ");
+		data += string(nombre)+ ": .word ";
 		if(inicializar !=NULL){
 			if(inicializar->isA(NUM_EXPR)){
 				data+= to_string(((NumberExpr*)inicializar)->value)+"\n";
-			}else if(CHAR_EXPR) {
-				data += ((CharExpr*)inicializar)->value+"\n";
+			}else if(inicializar->isA(CHAR_EXPR)) {
+				data += "\'";
+				data += ((CharExpr*)inicializar)->value;
+				data += "\' \n";
 			}
 			else{
+				data += "0 \n";
 				CodigoGenerado *declaracion = new CodigoGenerado();
 				inicializar->generalCodigo(declaracion);
-				codigoDec = "sw "+declaracion->temporal +", "+nombre;
+				codigoDec +=declaracion->codigo;
+				codigoDec += "sw "+declaracion->temporal +", "+string(nombre);
 			}
 		}else{
 			data += "0 \n";
 		}
 		codigo->codigo += codigoDec +"\n";
+		
+		/*if(enFuncion == true)
+		{
+			string TemporalActual = NewTemp();
+			guardar += "lw "+TemporalActual+", "+string(nombre)+"\n";
+			guardar += "sw "+TemporalActual+", "+to_string(sp_val)+"($sp)\n";
+      
+      salvar +=  "lw "+TemporalActual+", "+to_string(sp_val)+"($sp)\n";
+      salvar += "sw "+TemporalActual+", "+string(nombre)+"\n";
+      freeTemp(TemporalActual);
+			sp_val += 4;
+		}*/	
 		if(multideclatation != NULL)
 		multideclatation->generalCodigo(codigo);
 }
 
 void DecArrayStatement:: generalCodigo(CodigoGenerado * codigo){
 		string codigoDec = " ";
-		data += strcat(nombre, ": .word ");
+		data += string(nombre)+ ": .word ";
 		if(inicializar!=NULL){
 			ExprList::iterator pos = ((ArrayExpr*)inicializar)->value->begin();
 			 while(pos != ((ArrayExpr*)inicializar)->value->end()){
@@ -2642,6 +2719,7 @@ void DecArrayStatement:: generalCodigo(CodigoGenerado * codigo){
 			data += "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 \n";
 		}
 		codigo->codigo += codigoDec +"\n";
+
 		if(multideclatation != NULL)
 			multideclatation->generalCodigo(codigo);
 }

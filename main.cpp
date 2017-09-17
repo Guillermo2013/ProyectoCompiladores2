@@ -29,11 +29,11 @@ fclose(yyin);
 	input->generalCodigo(codigo);
 	ofstream fs("/home/guillermo/Desktop/ProyectoCompiladores2/vmipssoc/src/main.S");
 	fs<<data<<endl;
-	fs<< ".text\n clean: \nli $a0, BRIGHT_WHITE\n li $a1, BLACK\njal set_color\n jal clear_screen\n jal main\n";
+	fs<< ".text\n clean: \nli $a0, BRIGHT_WHITE\n li $a1, BLACK\njal set_color\n jal clear_screen\n jal main\n j .\n";
 
 
 	fs<<codigo->codigo<<endl;
-	fs<<"\njr $ra"<<endl;
+	fs<<"\nj ."<<endl;
 	fs.close();
 
 }
