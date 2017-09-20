@@ -6,6 +6,7 @@
 # 1 "exemplo.cpp"
 
 int array[10] = {100,200,300,10,500,600,700,800,900,1000};
+int num[10] = {1,3,52,54,3,5,6,12,67,90};
 # 1 "exemplo2.cpp" 1
 
 
@@ -25,7 +26,7 @@ int x, y;
     printf("Mod %d\n", x % y);
 
 }
-# 4 "exemplo.cpp" 2
+# 5 "exemplo.cpp" 2
 # 1 "WhileTest.cpp" 1
 
 void WhileTest() {
@@ -46,7 +47,7 @@ void WhileTest() {
     printf ("The total is %d\n", total);
 
 }
-# 5 "exemplo.cpp" 2
+# 6 "exemplo.cpp" 2
 # 1 "IfTest.cpp" 1
 
 void IfTest() {
@@ -64,7 +65,7 @@ void IfTest() {
         printf ("X %d is no equal to Y %d \n",x1,y1);
 
 }
-# 6 "exemplo.cpp" 2
+# 7 "exemplo.cpp" 2
 # 1 "RelOperators.cpp" 1
 
 
@@ -96,7 +97,7 @@ void Relacionales() {
     printf("(x == y: %d)\n ", x2 == y2);
 
 }
-# 7 "exemplo.cpp" 2
+# 8 "exemplo.cpp" 2
 # 1 "ForTest.cpp" 1
 
 
@@ -112,7 +113,7 @@ void ForTest() {
 
     printf(" End of loop\n");
 }
-# 8 "exemplo.cpp" 2
+# 9 "exemplo.cpp" 2
 # 1 "gcd.cpp" 1
 
 
@@ -129,7 +130,36 @@ int mod;
  return gcd(b, mod) ;
      }
 }
-# 9 "exemplo.cpp" 2
+# 10 "exemplo.cpp" 2
+# 1 "bubblesort.cpp" 1
+
+void BubbleSort()
+{
+int i,flag = 1;
+int temp,j;
+int numLength = 10;
+
+      for(i = 1; (i <= numLength) && flag; i++)
+     {
+          flag = 0;
+          for (j=0; j < (numLength -1); j++)
+         {
+               if (num[j+1] > num[j])
+              {
+                    temp = num[j];
+                    num[j] = num[j+1];
+                    num[j+1] = temp;
+                    flag = 1;
+               }
+          }
+     }
+      for (j=0; j < numLength; j++)
+      {
+ printf("array[%d]== %d",j,num[j]);
+      }
+     return;
+}
+# 11 "exemplo.cpp" 2
 void autosuma(){
 array[0] += 10;
 printf("suma %d \n",array[0]);
@@ -170,8 +200,8 @@ void main(){
   printf("rando1 = %d !\n",rando1);
   printf("rando2 = %d !\n",rando2);
 
-    a2 = 100;
-    b2 = 21;
+    a2 = 70;
+    b2 = 15;
 
     x4 = a2;
     y4 = b2;
@@ -182,7 +212,7 @@ void main(){
 Arimetico();
 WhileTest();
 ForTest();
-autosuma();
-IfTest();
-Relacionales();
+
+
+
 }

@@ -3,6 +3,7 @@
 .global clean
 .data
 array: .word 100,200,300,10,500,600,700,800,900,1000
+num: .word 1,3,52,54,3,5,6,12,67,90
 x: .word 0 
 y: .word 0 
  msg0:.asciz "X = " 
@@ -19,7 +20,7 @@ y: .word 0
  msg11:.asciz "Mod " 
  msg12:.asciz "\n" 
 total: .word 0 
-count: .word 0 
+
 number: .word 0 
  msg13:.asciz "Number [" 
  msg14:.asciz "] = " 
@@ -62,6 +63,7 @@ i: .word 0
 a:.word 0 
 b:.word 0 
 mod: .word 0 
+count: .word 0
  msg46:.asciz "suma " 
  msg47:.asciz " \n" 
  msg48:.asciz "resta " 
@@ -105,6 +107,7 @@ jal set_color
  jal clear_screen
  jal main
  j .
+ 
  
 Arimetico: 
 addi $sp, $sp, -4
@@ -506,34 +509,34 @@ addi $sp, $sp, -4
  sw $ra, ($sp)
  
 if1: 
-	lw $t3, b
-li $t4, 0
-beq $t3, $t4, igualEQ2 
-li $t3,0 
+	lw $t5, b
+li $t6, 0
+beq $t5, $t6, igualEQ2 
+li $t5,0 
 j finEQ2 
 igualEQ2: 
-li $t3,1 
+li $t5,1 
 finEQ2: 
-	 beqz $t3, .else1 
-lw $t4, a
- move $v0 ,$t4
+	 beqz $t5, .else1 
+lw $t6, a
+ move $v0 ,$t6
 j .epilogo5 
 	 j .endif1 
 .else1:
-lw $t3, a
-lw $t4, b
- move $a0, $t3
-move $a1, $t4
+lw $t5, a
+lw $t6, b
+ move $a0, $t5
+move $a1, $t6
 jal divide 
-move $t3, $a0 
-sw $t3, mod
- lw $t3, b
-move $a0, $t3 
-lw $t3, mod
-move $a1, $t3 
+move $t5, $a0 
+sw $t5, mod
+ lw $t5, b
+move $a0, $t5 
+lw $t5, mod
+move $a1, $t5 
 jal gcd 
-move $t3, $v0
- move $v0 ,$t3
+move $t5, $v0
+ move $v0 ,$t5
 j .epilogo5 
 	 j .endif1 
 .endif1: 
@@ -544,201 +547,220 @@ jr $ra
 autosuma: 
 addi $sp, $sp, -4
  sw $ra, ($sp)
-li $t3, 10
+ 
+li $t5, 10
 
+lw $t8, count
+addi $t9, $t8, 1 
+sw $t9, count
+sll $t8, $t8, 2
+la $t6, array
+add $t6, $t6, $t8
+lw $t7, ($t6)
+add $t5, $t5, $t7
+sw $t5, ($t6) 
+ la $t5, msg46
+move $a0, $t5
+jal puts
+la $t5, array
 li $t6, 0
 sll $t6, $t6, 2
-la $t4, array
-add $t4, $t4, $t6
-lw $t5, ($t4)
-add $t3, $t3, $t5
-sw $t3, ($t4) 
- la $t3, msg46
-move $a0, $t3
-jal puts
-la $t3, array
-li $t4, 0
-sll $t4, $t4, 2
-add $t3, $t4, $t3
-lw $t3, ($t3)
-move $a0, $t3
+add $t5, $t6, $t5
+lw $t5, ($t5)
+move $a0, $t5
 jal put_udecimal
-la $t3, msg47
-move $a0, $t3
+la $t5, msg47
+move $a0, $t5
 jal puts
-li $t3, 10
+li $t5, 10
+lw $t8, count
+addi $t9, $t8, 1 
+sw $t9, count
+sll $t8, $t8, 2
+la $t6, array
+add $t6, $t6, $t8
+lw $t7, ($t6)
+sub $t5, $t7, $t5
+sw $t5, ($t6) 
+ la $t5, msg48
+move $a0, $t5
+jal puts
+la $t5, array
 li $t6, 1
 sll $t6, $t6, 2
-la $t4, array
-add $t4, $t4, $t6
-lw $t5, ($t4)
-sub $t3, $t5, $t3
-sw $t3, ($t4) 
- la $t3, msg48
-move $a0, $t3
-jal puts
-la $t3, array
-li $t4, 1
-sll $t4, $t4, 2
-add $t3, $t4, $t3
-lw $t3, ($t3)
-move $a0, $t3
-jal put_udecimal
-la $t3, msg49
-move $a0, $t3
-jal puts
-li $t3, 10
-li $t6, 2
-sll $t6, $t6, 2
-la $t4, array
-add $t4, $t4, $t6
-lw $t5, ($t4)
+add $t5, $t6, $t5
+lw $t5, ($t5)
 move $a0, $t5
-move $a1, $t3
-move $s0, $t4
+jal put_udecimal
+la $t5, msg49
+move $a0, $t5
+jal puts
+li $t5, 10
+lw $t8, count
+addi $t9, $t8, 1 
+sw $t9, count
+sll $t8, $t8, 2
+la $t6, array
+add $t6, $t6, $t8
+lw $t7, ($t6)
+move $a0, $t7
+move $a1, $t5
+move $s0, $t6
 jal divide
 sw $t1, ($s0) 
- la $t3, msg50
-move $a0, $t3
-jal puts
-la $t3, array
-li $t4, 2
-sll $t4, $t4, 2
-add $t3, $t4, $t3
-lw $t3, ($t3)
-move $a0, $t3
-jal put_udecimal
-la $t3, msg51
-move $a0, $t3
-jal puts
-li $t3, 10
-li $t6, 4
-sll $t6, $t6, 2
-la $t4, array
-add $t4, $t4, $t6
-lw $t5, ($t4)
+ la $t5, msg50
 move $a0, $t5
-move $a1, $t3
-move $s0, $t4
+jal puts
+la $t5, array
+li $t6, 2
+sll $t6, $t6, 2
+add $t5, $t6, $t5
+lw $t5, ($t5)
+move $a0, $t5
+jal put_udecimal
+la $t5, msg51
+move $a0, $t5
+jal puts
+li $t5, 10
+lw $t8, count
+addi $t9, $t8, 1 
+sw $t9, count
+sll $t8, $t8, 2
+la $t6, array
+add $t6, $t6, $t8
+lw $t7, ($t6)
+move $a0, $t7
+move $a1, $t5
+move $s0, $t6
 jal divide
 sw $a0, ($s0) 
- la $t3, msg52
-move $a0, $t3
+ la $t5, msg52
+move $a0, $t5
 jal puts
-la $t3, array
-li $t4, 4
-sll $t4, $t4, 2
-add $t3, $t4, $t3
-lw $t3, ($t3)
-move $a0, $t3
+la $t5, array
+li $t6, 4
+sll $t6, $t6, 2
+add $t5, $t6, $t5
+lw $t5, ($t5)
+move $a0, $t5
 jal put_udecimal
-la $t3, msg53
-move $a0, $t3
+la $t5, msg53
+move $a0, $t5
 jal puts
-li $t3, 10
+li $t5, 10
+lw $t8, count
+addi $t9, $t8, 1 
+sw $t9, count
+sll $t8, $t8, 2
+la $t6, array
+add $t6, $t6, $t8
+lw $t7, ($t6)
+or $t5, $t5, $t7
+sw $t5, ($t6) 
+ la $t5, msg54
+move $a0, $t5
+jal puts
+la $t5, array
 li $t6, 5
 sll $t6, $t6, 2
-la $t4, array
-add $t4, $t4, $t6
-lw $t5, ($t4)
-or $t3, $t3, $t5
-sw $t3, ($t4) 
- la $t3, msg54
-move $a0, $t3
-jal puts
-la $t3, array
-li $t4, 5
-sll $t4, $t4, 2
-add $t3, $t4, $t3
-lw $t3, ($t3)
-move $a0, $t3
+add $t5, $t6, $t5
+lw $t5, ($t5)
+move $a0, $t5
 jal put_udecimal
-la $t3, msg55
-move $a0, $t3
+la $t5, msg55
+move $a0, $t5
 jal puts
-li $t3, 10
+li $t5, 10
+lw $t8, count
+addi $t9, $t8, 1 
+sw $t9, count
+sll $t8, $t8, 2
+la $t6, array
+add $t6, $t6, $t8
+lw $t7, ($t6)
+and $t5, $t5, $t7
+sw $t5, ($t6) 
+ la $t5, msg56
+move $a0, $t5
+jal puts
+la $t5, array
 li $t6, 6
 sll $t6, $t6, 2
-la $t4, array
-add $t4, $t4, $t6
-lw $t5, ($t4)
-and $t3, $t3, $t5
-sw $t3, ($t4) 
- la $t3, msg56
-move $a0, $t3
-jal puts
-la $t3, array
-li $t4, 6
-sll $t4, $t4, 2
-add $t3, $t4, $t3
-lw $t3, ($t3)
-move $a0, $t3
+add $t5, $t6, $t5
+lw $t5, ($t5)
+move $a0, $t5
 jal put_udecimal
-la $t3, msg57
-move $a0, $t3
+la $t5, msg57
+move $a0, $t5
 jal puts
-li $t3, 10
+li $t5, 10
+lw $t8, count
+addi $t9, $t8, 1 
+sw $t9, count
+sll $t8, $t8, 2
+la $t6, array
+add $t6, $t6, $t8
+lw $t7, ($t6)
+xor $t5, $t5, $t7
+sw $t5, ($t6) 
+ la $t5, msg58
+move $a0, $t5
+jal puts
+la $t5, array
 li $t6, 7
 sll $t6, $t6, 2
-la $t4, array
-add $t4, $t4, $t6
-lw $t5, ($t4)
-xor $t3, $t3, $t5
-sw $t3, ($t4) 
- la $t3, msg58
-move $a0, $t3
-jal puts
-la $t3, array
-li $t4, 7
-sll $t4, $t4, 2
-add $t3, $t4, $t3
-lw $t3, ($t3)
-move $a0, $t3
+add $t5, $t6, $t5
+lw $t5, ($t5)
+move $a0, $t5
 jal put_udecimal
-la $t3, msg59
-move $a0, $t3
+la $t5, msg59
+move $a0, $t5
 jal puts
-li $t3, 1
+li $t5, 1
+lw $t8, count
+addi $t9, $t8, 1 
+sw $t9, count
+sll $t8, $t8, 2
+la $t6, array
+add $t6, $t6, $t8
+lw $t7, ($t6)
+sll $t5, $t7, $t5
+sw $t5, ($t6) 
+ la $t5, msg60
+move $a0, $t5
+jal puts
+la $t5, array
 li $t6, 8
 sll $t6, $t6, 2
-la $t4, array
-add $t4, $t4, $t6
-lw $t5, ($t4)
-sll $t3, $t5, $t3
-sw $t3, ($t4) 
- la $t3, msg60
-move $a0, $t3
-jal puts
-la $t3, array
-li $t4, 8
-sll $t4, $t4, 2
-add $t3, $t4, $t3
-lw $t3, ($t3)
-move $a0, $t3
+add $t5, $t6, $t5
+lw $t5, ($t5)
+move $a0, $t5
 jal put_udecimal
-la $t3, msg61
-move $a0, $t3
+la $t5, msg61
+move $a0, $t5
 jal puts
-li $t3, 1
+li $t5, 1
+lw $t8, count
+addi $t9, $t8, 1 
+sw $t9, count
+sll $t8, $t8, 2
+la $t6, array
+add $t6, $t6, $t8
+lw $t7, ($t6)
+srl $t5, $t7, $t5
+sw $t5, ($t6) 
+ la $t5, msg62
+move $a0, $t5
+jal puts
+la $t5, array
 li $t6, 9
 sll $t6, $t6, 2
-la $t4, array
-add $t4, $t4, $t6
-lw $t5, ($t4)
-srl $t3, $t5, $t3
-sw $t3, ($t4) 
- la $t3, msg62
-move $a0, $t3
-jal puts
-la $t3, array
-li $t4, 9
-sll $t4, $t4, 2
-add $t3, $t4, $t3
-lw $t3, ($t3)
-move $a0, $t3
+add $t5, $t6, $t5
+lw $t5, ($t5)
+move $a0, $t5
 jal put_udecimal
-la $t3, msg63
-move $a0, $t3
+la $t5, msg63
+move $a0, $t5
 jal puts
 .epilogo6:
  lw $ra, ($sp)
@@ -754,78 +776,75 @@ addi $sp, $sp, -4
  
  
  
-la $t3, msg64
-move $a0, $t3
+la $t5, msg64
+move $a0, $t5
 jal puts
-li $t4, MS_COUNTER_REG_ADDR 
-move $a0, $t4
+li $t6, MS_COUNTER_REG_ADDR 
+move $a0, $t6
 jal rand_seed 
 jal rand 
-move $t4, $v0 
-sw $t4, rando1
+move $t6, $v0 
+sw $t6, rando1
 jal rand 
-move $t4, $v0 
-sw $t4, rando2
-la $t4, msg65
-move $a0, $t4
+move $t6, $v0 
+sw $t6, rando2
+la $t6, msg65
+move $a0, $t6
 jal puts
-lw $t4, rando1
-move $a0, $t4
+lw $t6, rando1
+move $a0, $t6
 jal put_udecimal
-la $t4, msg66
-move $a0, $t4
+la $t6, msg66
+move $a0, $t6
 jal puts
-la $t4, msg67
-move $a0, $t4
+la $t6, msg67
+move $a0, $t6
 jal puts
-lw $t4, rando2
-move $a0, $t4
+lw $t6, rando2
+move $a0, $t6
 jal put_udecimal
-la $t4, msg68
-move $a0, $t4
+la $t6, msg68
+move $a0, $t6
 jal puts
-li $t4, 100
-sw $t4, a2
-li $t4, 21
-sw $t4, b2
-lw $t4, a2
-sw $t4, x4
-lw $t4, b2
-sw $t4, y4
- lw $t4, x4
-move $a0, $t4 
-lw $t4, y4
-move $a1, $t4 
+li $t6, 70
+sw $t6, a2
+li $t6, 15
+sw $t6, b2
+lw $t6, a2
+sw $t6, x4
+lw $t6, b2
+sw $t6, y4
+ lw $t6, x4
+move $a0, $t6 
+lw $t6, y4
+move $a1, $t6 
 jal gcd 
-move $t4, $v0
-sw $t4, z
-la $t4, msg69
-move $a0, $t4
+move $t6, $v0
+sw $t6, z
+la $t6, msg69
+move $a0, $t6
 jal puts
-lw $t4, a2
-move $a0, $t4
+lw $t6, a2
+move $a0, $t6
 jal put_udecimal
-la $t4, msg70
-move $a0, $t4
+la $t6, msg70
+move $a0, $t6
 jal puts
-lw $t4, b2
-move $a0, $t4
+lw $t6, b2
+move $a0, $t6
 jal put_udecimal
-la $t4, msg71
-move $a0, $t4
+la $t6, msg71
+move $a0, $t6
 jal puts
-lw $t4, z
-move $a0, $t4
+lw $t6, z
+move $a0, $t6
 jal put_udecimal
-la $t4, msg72
-move $a0, $t4
+la $t6, msg72
+move $a0, $t6
 jal puts
  jal Arimetico 
  jal WhileTest 
  jal ForTest 
- jal autosuma 
- jal IfTest 
- jal Relacionales 
 .epilogo7:
  lw $ra, ($sp)
  addi $sp, $sp, 4
