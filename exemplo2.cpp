@@ -9,10 +9,10 @@ int x, y;
 
     printf("X = %d, Y = %d\n", x, y);
 
-    printf("Add %d\n", x + y);
-    printf("Sub %d\n", x - y);
-    printf("Mul %d\n", x * y);
-    printf("Div %d\n", x / y);
-    printf("Mod %d\n", x % y);
+    printf("Add %d \n", x + y);
+    printf("Sub %d \n", x - y);
+    printf("Mul %d \n", x * y);
+    printf("Div %d \n", x / y);
+    printf("Mod %d \n", x % y);
    
 }

@@ -10,7 +10,7 @@ void WhileTest() {
         
         
         number += 12; 
-        printf("Number [%d] = %d\n", count, number);
+        printf("Number [%d] = %d \n ", count, number);
         count = count + 1;
         total = total + number;
     }

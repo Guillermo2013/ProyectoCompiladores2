@@ -6,9 +6,10 @@
 #include <sstream>
 
 typedef pair<char *, int> elemento;
+typedef pair<string, int> elementoLocal;
 StackContenido *stack = new StackContenido();
 
-
+map< string,int > variablesLocales;
 map<string, bool> TemporalesMaps ({
 		{"$t0", false}, 
 		{"$t1", false}, 
@@ -55,7 +56,20 @@ string NewTemp() {
 	it++;
 		 }
 }
+bool exiteval(string id){
+	if(!variablesLocales.empty()){
+		map<string,int>::iterator it = variablesLocales.begin();
+		while(it != variablesLocales.end())
+		{
+			if(!it->first.compare(id))
+				return true;
+			it++;
+		}
+		return false;
+	}
+	return false;
 
+}
 void freeTemp(string temporal) {
 		if(TemporalesMaps[temporal])
 				TemporalesMaps[temporal] = false;
@@ -755,19 +769,23 @@ void FuncionExpr:: generalCodigo(CodigoGenerado * codigo)
 }
 void VarNombreExpr:: generalCodigo(CodigoGenerado * codigo)
 {
-	
+	if(!exiteval(index)){
 	string TemporalActual = NewTemp();
 	codigo->codigo = "lw " + TemporalActual + ", " + index +"\n";
 		codigo->temporal = TemporalActual;
+	}else{
+		string TemporalActual = NewTemp();
+	codigo->codigo = "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(index)]) +"($sp)\n";
+		codigo->temporal = TemporalActual;
+	}
 }
-
 
 void VarNombreArrayExpr:: generalCodigo(CodigoGenerado * codigo)
 {
 	
 	CodigoGenerado * codigoValorArray = new CodigoGenerado();
 	string TemporalActual = NewTemp();
-	codigo->codigo = "la " + TemporalActual + ", " + index +"\n";
+	codigo->codigo = "la " + TemporalActual + ", " + string(index) +"\n";
 	expr1->generalCodigo(codigoValorArray);
 	codigo->codigo += codigoValorArray->codigo;
 	codigo->codigo += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
@@ -1340,7 +1358,13 @@ void PreIncrementoExpr::generalCodigo(CodigoGenerado * codigo){
 	codigoIncre += "addi "+TemporalActual +", "+codigoValor->temporal+", 1 \n";
 	if(expr1->isA(ID_EXPR)){
 		string id = ((VarNombreExpr*)expr1)->index;
+		if(!exiteval(id)){
 		codigoIncre += "sw "+TemporalActual +", "+id +"\n";
+		 
+		}else{
+		 
+		 codigoIncre += "sw " + TemporalActual + ", "+ to_string(variablesLocales[id]) +"($sp)\n";
+		}
 		
 	}else if(expr1->isA(ARRAYNOMBRE_EXPR))
 	{
@@ -1371,7 +1395,13 @@ void PreDecrementoExpr::generalCodigo(CodigoGenerado * codigo){
 	codigoIncre += "addi "+TemporalActual +", "+codigoValor->temporal+", -1 \n";
 	if(expr1->isA(ID_EXPR)){
 		string id = ((VarNombreExpr*)expr1)->index;
+		if(!exiteval(id)){
 		codigoIncre += "sw "+TemporalActual +", "+id +"\n";
+		 
+		}else{
+		 
+		 codigoIncre += "sw " + TemporalActual + ", "+ to_string(variablesLocales[id]) +"($sp)\n";
+		}
 		
 	}else if(expr1->isA(ARRAYNOMBRE_EXPR))
 	{
@@ -1404,7 +1434,13 @@ void PosIncrementoExpr::generalCodigo(CodigoGenerado * codigo){
 	codigoIncre += "addi "+TemporalActual +", "+codigoValor->temporal+", 1 \n";
 	if(expr1->isA(ID_EXPR)){
 		string id = ((VarNombreExpr*)expr1)->index;
+		if(!exiteval(id)){
 		codigoIncre += "sw "+TemporalActual +", "+id +"\n";
+		 
+		}else{
+		 
+		 codigoIncre += "sw " + TemporalActual + ", "+ to_string(variablesLocales[id]) +"($sp)\n";
+		}
 		
 	}else if(expr1->isA(ARRAYNOMBRE_EXPR))
 	{
@@ -1435,7 +1471,13 @@ void PosDecrementoExpr::generalCodigo(CodigoGenerado * codigo){
 	codigoIncre += "addi "+TemporalActual +", "+codigoValor->temporal+", -1 \n";
 	if(expr1->isA(ID_EXPR)){
 		string id = ((VarNombreExpr*)expr1)->index;
+		if(!exiteval(id)){
 		codigoIncre += "sw "+TemporalActual +", "+id +"\n";
+		 
+		}else{
+		 
+		 codigoIncre += "sw " + TemporalActual + ", "+ to_string(variablesLocales[id]) +"($sp)\n";
+		}
 		
 	}else if(expr1->isA(ARRAYNOMBRE_EXPR))
 	{
@@ -1510,8 +1552,14 @@ void AsignarExpr::generalCodigo(CodigoGenerado * codigo){
 	string codigoAssign;
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
-    
+    	if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
 		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		 
+		}else{
+		 
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+	
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
 		string TemporalActual = NewTemp();
@@ -1543,9 +1591,17 @@ void MasIgualExpr::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "add "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
-		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+        if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "add "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
@@ -1579,9 +1635,17 @@ void MenosIgualExpr::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "sub "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
-		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+    if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "sub "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
@@ -1616,9 +1680,17 @@ void OrBitIgualExpr::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "or "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
-		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+    if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "or "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
@@ -1653,9 +1725,17 @@ void AndBitIgualExpr::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "or "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
-		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+    if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "and "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
@@ -1690,9 +1770,17 @@ void XorBitIgualExpr::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "xor "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
-		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+    if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "xor "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
@@ -1724,9 +1812,17 @@ void AsigCorIzqIgualExpr::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "sll "+codigo1->temporal +", "+TemporalActual+", "+codigo1->temporal+"\n";
-		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+    if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "sll "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
@@ -1758,9 +1854,17 @@ void AsigCorDerIgualExpr::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "srl "+codigo1->temporal +", "+TemporalActual+", "+codigo1->temporal+"\n";
-		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+    if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "srl "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
@@ -1795,11 +1899,20 @@ void MultIgualExpr::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
+      if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
     codigoAssign += "move $a0, "+TemporalActual+"\n";
     codigoAssign += "move $a1, "+codigo1->temporal+"\n";
     codigoAssign += "jal mult\n sw $v0, ";
-		codigoAssign += ((VarNombreExpr*)nombre)->index;
+    if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign +=  ((VarNombreExpr*)nombre)->index;
+		}else{
+		 codigoAssign += to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)";
+		}
+	
 		codigoAssign += "\n move "+codigo1->temporal+", $v0\n";
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
@@ -1837,11 +1950,19 @@ void DivIgualExpr::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "move $a0, "+TemporalActual+"\n";
+     if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "move $a0, "+TemporalActual+"\n";
     codigoAssign += "move $a1, "+codigo1->temporal+"\n";
-    codigoAssign += "jal divide\n sw $t1,";
-		codigoAssign += ((VarNombreExpr*)nombre)->index;
+    codigoAssign += "jal divide\n sw $t1, ";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign +=  ((VarNombreExpr*)nombre)->index;
+		}else{
+		 codigoAssign += to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)";
+		}
 		codigoAssign += "\n move "+codigo1->temporal+", $t1\n";
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
@@ -1880,11 +2001,19 @@ void ModIgualExpr::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "move $a0, "+TemporalActual+"\n";
+     if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "move $a0, "+TemporalActual+"\n";
     codigoAssign += "move $a1, "+codigo1->temporal+"\n";
-    codigoAssign += "jal divide\n sw $a0,";
-		codigoAssign += ((VarNombreExpr*)nombre)->index;
+    codigoAssign += "jal divide\n sw $a0, ";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign +=  ((VarNombreExpr*)nombre)->index;
+		}else{
+		 codigoAssign += to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)";
+		}
 		codigoAssign += "\n move "+codigo1->temporal+", $t1\n";
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
@@ -1925,11 +2054,19 @@ void ModIgualStatement::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "move $a0, "+TemporalActual+"\n";
+     if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "move $a0, "+TemporalActual+"\n";
     codigoAssign += "move $a1, "+codigo1->temporal+"\n";
     codigoAssign += "jal divide\n sw $a0, ";
-		codigoAssign += ((VarNombreExpr*)nombre)->index;
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign +=  ((VarNombreExpr*)nombre)->index;
+		}else{
+		 codigoAssign += to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)";
+		}
 		codigoAssign += "\n";
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
@@ -1965,11 +2102,19 @@ void DivIgualStatement::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "move $a0, "+TemporalActual+"\n";
+     if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "move $a0, "+TemporalActual+"\n";
     codigoAssign += "move $a1, "+codigo1->temporal+"\n";
     codigoAssign += "jal divide\n sw $t1, ";
-		codigoAssign += ((VarNombreExpr*)nombre)->index;
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign +=  ((VarNombreExpr*)nombre)->index;
+		}else{
+		 codigoAssign += to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)";
+		}
 		codigoAssign += "\n";
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
@@ -2006,11 +2151,20 @@ void MultIgualStatement::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
+    if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
     codigoAssign += "move $a0, "+TemporalActual+"\n";
     codigoAssign += "move $a1, "+codigo1->temporal+"\n";
     codigoAssign += "jal mult\n sw $v0, ";
-		codigoAssign +=  + ((VarNombreExpr*)nombre)->index ;
+    if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign +=  ((VarNombreExpr*)nombre)->index;
+		}else{
+		 codigoAssign += to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)";
+		}
+	
 		codigoAssign += "\n";
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
@@ -2047,9 +2201,17 @@ void AsigCorDerIgualStatement::generalCodigo(CodigoGenerado * codigo){
 	string codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "srl "+codigo1->temporal +", "+TemporalActual+", "+codigo1->temporal+"\n";
-		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+    if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "srl "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
@@ -2080,9 +2242,17 @@ void AsigCorIzqIgualStatement::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "sll "+codigo1->temporal +", "+TemporalActual+", "+codigo1->temporal+"\n";
-		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+    if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "sll "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
@@ -2114,9 +2284,17 @@ void XorBitIgualStatement::generalCodigo(CodigoGenerado * codigo){
 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "xor "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
-		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+    if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "xor "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
@@ -2148,9 +2326,17 @@ void AndBitIgualStatement::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "and "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
-		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+    if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "and "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
@@ -2182,9 +2368,17 @@ void OrBitIgualStatement::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "or "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
-		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+    if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "or "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
@@ -2217,10 +2411,18 @@ void MenosIgualStatement::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "sub "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
-		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
-		freeTemp(TemporalActual);
+   if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "sub "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+			freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
 		string TemporalActual = NewTemp();
@@ -2251,9 +2453,17 @@ void MasIgualStatement::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo+"\n"; 
 	if(nombre->isA(ID_EXPR)){
     string TemporalActual = NewTemp();
-    codigoAssign += "lw "+ TemporalActual +", "+ ((VarNombreExpr*)nombre)->index +"\n";
-    codigoAssign += "add "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
-		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+    if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "lw " + TemporalActual + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "lw " + TemporalActual + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
+		codigoAssign += "add "+codigo1->temporal +", "+codigo1->temporal+", "+TemporalActual+"\n";
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
+		 codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		}else{
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
 		freeTemp(TemporalActual);
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
@@ -2285,19 +2495,25 @@ void AsignarStatement::generalCodigo(CodigoGenerado * codigo){
 	codigoAssign = codigo1->codigo; 
 	if(nombre->isA(ID_EXPR)){
     
+		if(!exiteval(string(((VarNombreExpr*)nombre)->index))){
 		codigoAssign += "sw " + codigo1->temporal + ", " + ((VarNombreExpr*)nombre)->index +"\n";
+		 
+		}else{
+		 
+		 codigoAssign += "sw " + codigo1->temporal + ", "+ to_string(variablesLocales[string(((VarNombreExpr*)nombre)->index)]) +"($sp)\n";
+		}
 	}else if(nombre->isA(ARRAYNOMBRE_EXPR)){
 		CodigoGenerado *codigoValorArray = new CodigoGenerado();
 		string TemporalActual = NewTemp();
 		((VarNombreArrayExpr*)nombre)->expr1->generalCodigo(codigoValorArray);
 		codigoAssign += codigoValorArray->codigo;
-		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "la "+TemporalActual+ ", "+ ((VarNombreArrayExpr*)nombre)->index +"\n";
-		freeTemp(codigoValorArray->temporal);
 		codigoAssign += "sll "+codigoValorArray->temporal+", "+codigoValorArray->temporal+", 2\n";
 		codigoAssign += "add "+TemporalActual+", "+TemporalActual+", "+codigoValorArray->temporal+"\n";
 		codigoAssign += "sw "+codigo1->temporal+", ("+TemporalActual+") \n ";
 		freeTemp(TemporalActual);
+		freeTemp(codigoValorArray->temporal);
+		delete codigoValorArray;	
 	}
 	freeTemp(codigo1->temporal);
 	codigo->codigo += codigoAssign;
@@ -2548,24 +2764,21 @@ void Producer_Statement :: generalCodigo(CodigoGenerado * codigo){
 		freeTemp(codigoParametro->temporal);
 	}
 	if(producerStatement != NULL){
-		/*enFuncion = true;
+	enFuncion = true;
    
 	string antes = "addi $sp, $sp,";
-	guardar += "sw $ra, ($sp)\n";
-	salvar += "lw $ra, ($sp)\n";*/
-		codigoFuncion += "addi $sp, $sp, -4\n sw $ra, ($sp)\n";	
 	
 	CodigoGenerado *codigoPocedimiento = new CodigoGenerado();
 	producerStatement->generalCodigo(codigoPocedimiento);
-	//codigoFuncion += antes+" -" +to_string(sp_val)+"\n" + guardar;
+	codigoFuncion += antes+" -" +to_string(sp_val)+"\nsw $ra, ($sp)\n";
 	codigoFuncion += codigoPocedimiento->codigo;
-	//codigoFuncion += salvar+ antes +to_string(sp_val)+"\n";
-	codigoFuncion += ".epilogo"+to_string(cantidadFunciones++)+":\n lw $ra, ($sp)\n addi $sp, $sp, 4\n";
+	codigoFuncion += ".epilogo"+to_string(cantidadFunciones++)+":\n lw $ra, ($sp)\n addi $sp, $sp,"+to_string(sp_val)+"\n";
 	delete codigoPocedimiento;  
-	/*enFuncion = false;
-		guardar = " ";
+	enFuncion = false;
+	guardar = " ";
 	salvar = " ";
-	sp_val = 0;*/
+	sp_val = 4;
+	variablesLocales.clear();
 	}
 	codigoFuncion += "jr $ra\n";
 	codigo->codigo += codigoFuncion;
@@ -2598,24 +2811,21 @@ void Funcion_Statement :: generalCodigo(CodigoGenerado * codigo){
 		delete codigoParametro;
 	}
 	if(funcionStatement != NULL){
-    	/*enFuncion = true;
+    enFuncion = true;
    
 	string antes = "addi $sp, $sp,";
-	guardar += "sw $ra, ($sp)\n";
-	salvar += "lw $ra, ($sp)\n";*/
-		codigoFuncion += "addi $sp, $sp, -4\n sw $ra, ($sp)\n";	
 	
 	CodigoGenerado *codigoPocedimiento = new CodigoGenerado();
 	funcionStatement->generalCodigo(codigoPocedimiento);
-	//codigoFuncion += antes+" -" +to_string(sp_val)+"\n" + guardar;
+	codigoFuncion += antes+" -" +to_string(sp_val)+"\nsw $ra, ($sp)\n";
 	codigoFuncion += codigoPocedimiento->codigo;
-	//codigoFuncion += salvar+ antes +to_string(sp_val)+"\n";
-	codigoFuncion += ".epilogo"+to_string(cantidadFunciones++)+":\n lw $ra, ($sp)\n addi $sp, $sp, 4\n";
+	codigoFuncion += ".epilogo"+to_string(cantidadFunciones++)+":\n lw $ra, ($sp)\n addi $sp, $sp,"+to_string(sp_val)+"\n";
 	delete codigoPocedimiento;  
-	/*enFuncion = false;
-		guardar = " ";
+	enFuncion = false;
+	guardar = " ";
 	salvar = " ";
-	sp_val = 0;*/
+	sp_val = 4;
+	variablesLocales.clear();
 	}
 	codigoFuncion += "jr $ra\n";
 
@@ -2665,26 +2875,43 @@ void Return_Statement :: generalCodigo(CodigoGenerado * codigo){
 
 void DecVariableStatement:: generalCodigo(CodigoGenerado * codigo){
 		string codigoDec = " ";
-		data += string(nombre)+ ": .word ";
-		if(inicializar !=NULL){
-			if(inicializar->isA(NUM_EXPR)){
-				data+= to_string(((NumberExpr*)inicializar)->value)+"\n";
-			}else if(inicializar->isA(CHAR_EXPR)) {
-				data += "\'";
-				data += ((CharExpr*)inicializar)->value;
-				data += "\' \n";
-			}
-			else{
+		if(!enFuncion){
+	    	data += string(nombre)+ ": .word ";
+	    	if(inicializar !=NULL){
+				if(inicializar->isA(NUM_EXPR)){
+					data+= to_string(((NumberExpr*)inicializar)->value)+"\n";
+				}else if(inicializar->isA(CHAR_EXPR)) {
+					data += "\'";
+					data += ((CharExpr*)inicializar)->value;
+					data += "\' \n";
+				}
+				else{
+					data += "0 \n";
+					CodigoGenerado *declaracion = new CodigoGenerado();
+					inicializar->generalCodigo(declaracion);
+					codigoDec +=declaracion->codigo;
+					codigoDec += "sw "+declaracion->temporal +", "+string(nombre);
+					freeTemp(declaracion->temporal);
+				}
+			}else{
 				data += "0 \n";
-				CodigoGenerado *declaracion = new CodigoGenerado();
+			}
+				
+		}
+ 		else if(enFuncion){
+
+ 			if(inicializar!= NULL){
+ 				CodigoGenerado *declaracion = new CodigoGenerado();
 				inicializar->generalCodigo(declaracion);
 				codigoDec +=declaracion->codigo;
-				codigoDec += "sw "+declaracion->temporal +", "+string(nombre);
-			}
-		}else{
-			data += "0 \n";
-		}
-		codigo->codigo += codigoDec +"\n";
+				codigoDec += "sw "+declaracion->temporal +", "+to_string(sp_val)+"($sp)\n";
+				freeTemp(declaracion->temporal);
+ 			}
+
+ 			variablesLocales.insert(elementoLocal(nombre,sp_val));
+ 			sp_val = sp_val +  4;
+ 		}
+		
 		/*
 		if(enFuncion == true)
 		{
@@ -2697,6 +2924,7 @@ void DecVariableStatement:: generalCodigo(CodigoGenerado * codigo){
       freeTemp(TemporalActual);
 			sp_val += 4;
 		}	*/
+		codigo->codigo += codigoDec +"\n";
 		if(multideclatation != NULL)
 		multideclatation->generalCodigo(codigo);
 }
@@ -2709,8 +2937,11 @@ void DecArrayStatement:: generalCodigo(CodigoGenerado * codigo){
 			 while(pos != ((ArrayExpr*)inicializar)->value->end()){
 				if((*pos)->isA(NUM_EXPR))
 					data+= to_string(((NumberExpr*)*pos)->value);
-				else if((*pos)->isA(CHAR_EXPR))
-					data += ((CharExpr*)*pos)->value;
+				else if((*pos)->isA(CHAR_EXPR)){
+					data += "\'";
+					data +=((CharExpr*)*pos)->value;
+					data +="\'";
+				}
 				pos++;
 				if(pos != ((ArrayExpr*)inicializar)->value->end())
 					data+=",";
@@ -2735,8 +2966,17 @@ void PreIncrementoStatement::generalCodigo(CodigoGenerado * codigo){
 	codigoIncre = codigoValor->codigo;
 	codigoIncre += "addi "+TemporalActual +", "+codigoValor->temporal+", 1 \n";
 	if(expr1->isA(ID_EXPR)){
+
 		string id = ((VarNombreExpr*)expr1)->index;
+		if(!exiteval(id)){
 		codigoIncre += "sw "+TemporalActual +", "+id +"\n";
+		 
+		}else{
+		 
+		 codigoIncre += "sw " + TemporalActual + ", "+ to_string(variablesLocales[id]) +"($sp)\n";
+		}
+
+		
 		
 	}else if(expr1->isA(ARRAYNOMBRE_EXPR))
 	{
@@ -2767,7 +3007,13 @@ void PreDecrementoStatement::generalCodigo(CodigoGenerado * codigo){
 	codigoIncre += "addi "+TemporalActual +", "+codigoValor->temporal+", -1 \n";
 	if(expr1->isA(ID_EXPR)){
 		string id = ((VarNombreExpr*)expr1)->index;
+		if(!exiteval(id)){
 		codigoIncre += "sw "+TemporalActual +", "+id +"\n";
+		 
+		}else{
+		 
+		 codigoIncre += "sw " + TemporalActual + ", "+ to_string(variablesLocales[id]) +"($sp)\n";
+		}
 		
 	}else if(expr1->isA(ARRAYNOMBRE_EXPR))
 	{
@@ -2801,7 +3047,13 @@ void PosIncrementoStatement::generalCodigo(CodigoGenerado * codigo){
 	codigoIncre += "addi "+TemporalActual +", "+codigoValor->temporal+", 1 \n";
 	if(expr1->isA(ID_EXPR)){
 		string id = ((VarNombreExpr*)expr1)->index;
+		if(!exiteval(id)){
 		codigoIncre += "sw "+TemporalActual +", "+id +"\n";
+		 
+		}else{
+		 
+		 codigoIncre += "sw " + TemporalActual + ", "+ to_string(variablesLocales[id]) +"($sp)\n";
+		}
 		
 	}else if(expr1->isA(ARRAYNOMBRE_EXPR))
 	{
@@ -2832,7 +3084,13 @@ void PosDecrementoStatement::generalCodigo(CodigoGenerado * codigo){
 	codigoIncre += "addi "+TemporalActual +", "+codigoValor->temporal+", -1 \n";
 	if(expr1->isA(ID_EXPR)){
 		string id = ((VarNombreExpr*)expr1)->index;
+		if(!exiteval(id)){
 		codigoIncre += "sw "+TemporalActual +", "+id +"\n";
+		 
+		}else{
+		 
+		 codigoIncre += "sw " + TemporalActual + ", "+ to_string(variablesLocales[id]) +"($sp)\n";
+		}
 		
 	}else if(expr1->isA(ARRAYNOMBRE_EXPR))
 	{

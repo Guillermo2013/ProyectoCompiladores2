@@ -1,26 +1,22 @@
-/*    
+   
 void BubbleSort()
 {
-int i,j,temp,numLength = 10;   
           
       
-      for(i = 1; i <= numLength; i++)
+      for(i2 = 1; i2 <= numLength; i2++)
      {
          
-          for (j=0; j < (numLength -1); j++)
+          for (j2=0; j2 < (numLength -1); j2++)
          {
-               if (num[j+1] > num[j])     
+               if (num[j2+1] > num[j2])     
               { 
-                    temp = num[j];             
-                    num[j] = num[j+1];
-                    num[j+1] = temp;
+                    temp = num[j2];             
+                    num[j2] = num[j2+1];
+                    num[j2+1] = temp;
                                  
                }
           }
      }
-      for (j=0; j < numLength; j++)
-      {
-	printf("array[%d]== %d",j,num[j]);
-      }
-     return;   
-}*/
+     
+      
+}

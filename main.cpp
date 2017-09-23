@@ -27,7 +27,7 @@ fclose(yyin);
 	CodigoGenerado * codigo = new CodigoGenerado();
 	input->ValidateSemantic();
 	input->generalCodigo(codigo);
-	ofstream fs("/home/guillermo/Desktop/ProyectoCompiladores2/vmipssoc/src/main.S");
+	ofstream fs("/home/guillermo/Desktop/ProyectoCompiladores2Copia/vmipssoc/src/main.S");
 	fs<<data<<endl;
 	fs<< ".text\n clean: \nli $a0, BRIGHT_WHITE\n li $a1, BLACK\njal set_color\n jal clear_screen\n jal main\n j .\n";
 
